@@ -1,0 +1,31 @@
+name: Lint and test
+
+on: pull_request
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  run-linters:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+      - run: yarn --pure-lockfile
+      - run: yarn run lint
+      - run: yarn run test
+      - run: yarn run build
+      - name: Commit code changes if any
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: github-actions-gm
+          author_email: bot+github-actions-gm@users.noreply.github.com
+          message: 'Fix code style issues with eslint & prettier, update schema and hooks'
+          push: '--set-upstream origin'

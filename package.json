@@ -1,0 +1,79 @@
+{
+  "name": "hypergraph-cli",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "description": "Hypergraph commands",
+  "author": {
+    "name": "Rinto Jose",
+    "email": "rintoj@gmail.com"
+  },
+  "bin": {
+    "hyperg": ".bin/cli"
+  },
+  "repository": "https://github.com/rintoj/hypergraph-graphql.git",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint --fix && tsc -p . --noEmit && yarn prettier",
+    "prettier": "prettier --write \"**/src/**/*.{ts,tsx}\" -c",
+    "build": "rimraf dist && tsc -p .",
+    "semantic-release": "semantic-release",
+    "cli": "ts-node src/index.ts"
+  },
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "clifer": "^1.1.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.1",
+    "@types/node": "^18.7.16",
+    "@typescript-eslint/eslint-plugin": "^5.36.2",
+    "@typescript-eslint/parser": "^5.36.2",
+    "eslint": "^8.23.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-jest": "^27.0.4",
+    "eslint-plugin-prettier": "^4.2.1",
+    "jest": "^29.5.0",
+    "prettier": "^2.7.1",
+    "rimraf": "^5.0.1",
+    "ts-jest": "^29.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "testEnvironment": "node",
+    "collectCoverage": false,
+    "transform": {
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "testPathIgnorePatterns": [
+            "/node_modules/",
+            "/dist/"
+          ],
+          "isolatedModules": true,
+          "tsconfig": "./tsconfig.json"
+        }
+      ]
+    },
+    "collectCoverageFrom": [
+      "**/*.{ts,tsx}",
+      "!**/dist/**",
+      "!**/coverage/**",
+      "!**/node_modules/**",
+      "!**/src/decorators/**",
+      "!**/src/error/**",
+      "!**/test/**"
+    ]
+  },
+  "release": {
+    "branches": [
+      "master"
+    ]
+  }
+}
