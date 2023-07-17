@@ -1,31 +1,23 @@
-# hypergraph-graphql
+# hypergraph-cli
 
 ## Install
 
 Using npm:
 
 ```sh
-npm install hypergraph-graphql
+npm install hypergraph-cli
 ```
 
 Using yarn:
 
 ```sh
-yarn add hypergraph-graphql
+yarn add hypergraph-cli
 ```
 
 ## Usage
 
-```ts
-ObjectType()
-class User {
-  @Field(() => ID)
-  id!: string
+To run hypergraph cli, use the following command.
 
-  @Field()
-  name!: string
-
-  @Field({ nullable: true })
-  bio?: string
-}
+```sh
+npx hypergraph
 ```
