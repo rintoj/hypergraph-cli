@@ -1,5 +1,5 @@
-import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client'
-import fetch from 'node-fetch'
+import { gql } from '@apollo/client'
+import { useMutation } from '../../graphql/use-mutation'
 
 const mutation = gql`
   mutation signInWithOauth($input: SignInWithOauthMutationInput!) {
@@ -46,13 +46,5 @@ export interface UserType {
 }
 
 export async function signInWithOauth({ input }: RequestType) {
-  const uri = process.env.HYPERGRAPH_SERVICE_URL ?? 'http://local.hypergraph.in/graphql'
-  const client = new ApolloClient({
-    cache: new InMemoryCache(),
-    link: new HttpLink({ uri, fetch }),
-  })
-  return client.mutate<MutationType, RequestType>({
-    mutation,
-    variables: { input },
-  })
+  return useMutation<MutationType, RequestType>(mutation, { input })
 }
