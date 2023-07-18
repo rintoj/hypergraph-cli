@@ -1,17 +1,14 @@
-# hypergraph-cli
+# Hypergraph CLI
+
+Hypergraph CLI package is named as `@hgraph/cli` and should be installed globally to access and
+configure Hypergraph projects, to build and to run it.
 
 ## Install
 
 Using npm:
 
 ```sh
-npm install hypergraph-cli
-```
-
-Using yarn:
-
-```sh
-yarn add hypergraph-cli
+npm install @hgraph/cli -g
 ```
 
 ## Usage
@@ -19,8 +16,6 @@ yarn add hypergraph-cli
 To run hypergraph cli, use the following command.
 
 ```sh
-npx hypergraph
-
 hypergraph   <login|logout|user|config> [--help]
 
 COMMANDS
