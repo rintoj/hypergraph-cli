@@ -11,7 +11,7 @@ const defaultConfig: Config = {
 
 const configPath = `${process.env.HOME}/.hypergraph`
 const configFile = `${configPath}/config.json`
-export const config = readConfig()
+export let config = readConfig()
 
 export function readConfig() {
   try {
@@ -23,13 +23,12 @@ export function readConfig() {
   }
 }
 
-export function saveConfig(config: Config) {
+export function saveConfig(changedConfig: Config) {
   fs.ensureDirSync(configPath)
   const currentConfig = readConfig()
-  fs.writeFileSync(
-    configFile,
-    JSON.stringify({ ...defaultConfig, ...currentConfig, ...config }, null, 2),
-  )
+  const finalConfig = { ...defaultConfig, ...currentConfig, ...changedConfig }
+  fs.writeFileSync(configFile, JSON.stringify(finalConfig, null, 2))
+  config = finalConfig
 }
 
 export function resolveServiceUrl() {
