@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client'
-import { useMutation } from '../../graphql/use-mutation'
+import { useMutation } from '../../../graphql/use-mutation'
 
 const mutation = gql`
   mutation signInWithOauth($input: SignInWithOauthMutationInput!) {

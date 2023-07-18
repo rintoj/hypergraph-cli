@@ -1,7 +1,7 @@
 import { command, input } from 'clifer'
 import chalk from 'chalk'
 import { config, saveConfig } from '../../../config/config'
-import { fetchMe } from '../../user/fetch-me-query'
+import { fetchMe } from '../../auth/user/fetch-me-query'
 import fetch from 'node-fetch'
 
 interface Props {
@@ -28,6 +28,6 @@ async function run({ url }: Props) {
 }
 
 export default command<Props>('remote')
-  .description('View or update remote')
+  .description('View or update remote server URL')
   .argument(input('url').description('Server url').string())
   .handle(run)

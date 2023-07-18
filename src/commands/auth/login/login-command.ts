@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import { command, input } from 'clifer'
 import express from 'express'
 import { exit } from 'process'
-import { saveConfig } from '../../config/config'
+import { saveConfig } from '../../../config/config'
 import { findAvailablePort } from './find-available-ports'
 import { AuthenticationProvider, signInWithOauth } from './signin-with-auth'
 

@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 interface Config {
   accessToken?: string | null
   remote?: string
+  project?: string
 }
 
 const defaultConfig: Config = {

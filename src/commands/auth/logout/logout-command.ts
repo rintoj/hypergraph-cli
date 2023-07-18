@@ -1,14 +1,13 @@
 import { command } from 'clifer'
-import fs from 'fs-extra'
+import { saveConfig } from '../../../config/config'
 import { useSignOut } from './signout-mutation'
-import { saveConfig } from '../../config/config'
 
 export default command<any>('logout')
-  .description('Sign out of your account')
+  .description('Logout of your account')
   .handle(async () => {
     await useSignOut().catch(error => {
-      console.error('Error while trying to sign out.', error.message)
+      console.error('Error while trying to logout.', error.message)
     })
     saveConfig({ accessToken: null })
-    console.log('Signed out successfully.')
+    console.log('Logged out successfully.')
   })
