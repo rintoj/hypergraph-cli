@@ -11,7 +11,7 @@
   "bin": {
     "hypergraph": ".bin/cli"
   },
-  "repository": "https://github.com/rintoj/hypergraph-graphql.git",
+  "repository": "https://github.com/rintoj/hypergraph-cli.git",
   "scripts": {
     "test": "jest",
     "lint": "eslint --fix && tsc -p . --noEmit && yarn prettier",
