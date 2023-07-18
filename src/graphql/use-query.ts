@@ -2,20 +2,21 @@ import { ApolloClient, HttpLink, InMemoryCache, OperationVariables } from '@apol
 import fetch from 'node-fetch'
 import { config, resolveServiceUrl } from '../config/config'
 
-export function useMutation<T, R extends OperationVariables>(mutation: any, variables: R) {
+export function useQuery<T, R extends OperationVariables>(query: any, variables?: R) {
   const uri = resolveServiceUrl()
+  const { accessToken } = config
   const client = new ApolloClient({
     cache: new InMemoryCache(),
     link: new HttpLink({
       uri,
       fetch,
       headers: {
-        Authorization: `Bearer ${config?.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     }),
   })
-  return client.mutate<T, R>({
-    mutation,
+  return client.query<T, R>({
+    query,
     variables,
   })
 }
