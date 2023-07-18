@@ -1,7 +1,7 @@
 import fs from 'fs-extra'
 
 interface Config {
-  accessToken?: string
+  accessToken?: string | null
   serviceUrl?: string
 }
 
