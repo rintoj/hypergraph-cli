@@ -7,6 +7,9 @@ export default command<any>('user')
   .handle(async () => {
     try {
       const { data } = await fetchMe()
+      if (!data.me) {
+        throw new Error('Not logged in')
+      }
       console.log(chalk.green(`Logged in as ${data?.me?.name ?? ''}`))
     } catch (e) {
       if (e.message === 'User is not authorized to access this resource') {

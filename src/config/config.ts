@@ -2,11 +2,11 @@ import fs from 'fs-extra'
 
 interface Config {
   accessToken?: string | null
-  serviceUrl?: string
+  remote?: string
 }
 
 const defaultConfig: Config = {
-  serviceUrl: 'http://local.hypergraph.in/graphql',
+  remote: 'http://local.hypergraph.in/graphql',
 }
 
 const configPath = `${process.env.HOME}/.hypergraph`
@@ -14,9 +14,13 @@ const configFile = `${configPath}/config.json`
 export const config = readConfig()
 
 export function readConfig() {
-  fs.ensureDirSync(configPath)
-  const currentConfig = fs.readJSONSync(configFile) ?? {}
-  return currentConfig as Config
+  try {
+    fs.ensureDirSync(configPath)
+    const currentConfig = fs.readJSONSync(configFile) ?? {}
+    return currentConfig as Config
+  } catch {
+    return defaultConfig
+  }
 }
 
 export function saveConfig(config: Config) {
@@ -29,5 +33,5 @@ export function saveConfig(config: Config) {
 }
 
 export function resolveServiceUrl() {
-  return process.env.HYPERGRAPH_SERVICE_URL ?? config.serviceUrl ?? defaultConfig.serviceUrl
+  return process.env.HYPERGRAPH_SERVICE_URL ?? config.remote ?? defaultConfig.remote
 }

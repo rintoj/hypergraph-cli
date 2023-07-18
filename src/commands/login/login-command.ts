@@ -68,8 +68,11 @@ async function run({ provider }: Props) {
       exit(1)
     })
 
+    if (!result.data?.signInWithOauth?.user) {
+      throw new Error('Unable to login!')
+    }
     saveConfig({ accessToken: result.data?.signInWithOauth?.accessToken ?? '' })
-    console.log(`Logged in as ${result.data?.signInWithOauth?.user?.name ?? ''}`)
+    console.log(chalk.green(`Logged in as ${result.data?.signInWithOauth?.user?.name ?? ''}`))
     exit(0)
   })
 
@@ -89,12 +92,12 @@ async function run({ provider }: Props) {
 }
 
 export default command<Props>('login')
-  .description('Sign in to your Hypergraph account')
+  .description('Login to your Hypergraph account')
   .option(
     input('provider')
-      .description('Sign in with Google or Github')
+      .description('Login with Google or Github')
       .string()
-      .prompt('How would you like to sign in?')
+      .prompt('How would you like to login?')
       .choices([AuthenticationProvider.GOOGLE, AuthenticationProvider.GITHUB])
       .prompt(),
   )
