@@ -1,23 +1,16 @@
+import chalk from 'chalk'
 import { command, input } from 'clifer'
 import express from 'express'
-import fs from 'fs-extra'
 import { exit } from 'process'
+import { saveConfig } from '../../config/config'
 import { findAvailablePort } from './find-available-ports'
 import { AuthenticationProvider, signInWithOauth } from './signin-with-auth'
-import chalk from 'chalk'
 
 interface Props {
   provider: AuthenticationProvider
 }
 
 export const dynamicImport = new Function('specifier', 'return import(specifier)')
-
-function saveAccessToken(accessToken: string) {
-  // TODO: Store access token in a config on home directory
-  const configPath = `${process.env.HOME}/.hypergraph`
-  fs.ensureDirSync(configPath)
-  fs.writeFileSync(`${configPath}/config.json`, JSON.stringify({ accessToken }))
-}
 
 function generateGoogleOAuthUrl(hostname: string, port: number) {
   const redirectUri = `http://${hostname}:${port}/api/auth/google`
@@ -59,7 +52,7 @@ async function run({ provider }: Props) {
   const app = express()
   app.get(['/api/auth/github', '/api/auth/google'], async (req, res) => {
     const authorizationCode = req.query.code as string
-    res.send('You can close this window now. <script>window.close()</script>')
+    res.send('<script>window.close()</script>You can close this window now.')
     if (!authorizationCode) {
       throw new Error('Authorization code not found')
     }
@@ -75,8 +68,11 @@ async function run({ provider }: Props) {
       exit(1)
     })
 
-    saveAccessToken(result.data?.signInWithOauth?.accessToken ?? '')
-    console.log(`Logged in as ${result.data?.signInWithOauth?.user?.name ?? ''}`)
+    if (!result.data?.signInWithOauth?.user) {
+      throw new Error('Unable to login!')
+    }
+    saveConfig({ accessToken: result.data?.signInWithOauth?.accessToken ?? '' })
+    console.log(chalk.green(`Logged in as ${result.data?.signInWithOauth?.user?.name ?? ''}`))
     exit(0)
   })
 
@@ -96,12 +92,12 @@ async function run({ provider }: Props) {
 }
 
 export default command<Props>('login')
-  .description('Sign in to your Hypergraph account')
+  .description('Login to your Hypergraph account')
   .option(
     input('provider')
-      .description('Sign in with Google or Github')
+      .description('Login with Google or Github')
       .string()
-      .prompt('How would you like to sign in?')
+      .prompt('How would you like to login?')
       .choices([AuthenticationProvider.GOOGLE, AuthenticationProvider.GITHUB])
       .prompt(),
   )
