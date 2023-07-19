@@ -18,6 +18,7 @@ import { useCheckoutQuery } from './use-checkout-query.gql'
 
 interface Props {
   projectId?: string
+  skipCache?: boolean
 }
 
 interface Context {
@@ -52,7 +53,7 @@ async function ensureProjectDir({ projectRoot }: Pick<Context, 'projectRoot'>) {
   await runCommand('git init', { cwd: projectRoot, silent: true })
 }
 
-async function run({ projectId }: Props) {
+async function run({ projectId, skipCache }: Props) {
   try {
     const projects = await fetchProjects()
     let selectedProject = selectProjectById(projects, projectId ?? config.projectId)
@@ -63,8 +64,8 @@ async function run({ projectId }: Props) {
     saveProject(selectedProject.id)
 
     const context = await createContext(selectedProject)
-    const cache = readCache(context.projectRoot)
-    const checkoutResponse = await useCheckoutQuery({ projectId, next: cache.checkoutToken })
+    const next = skipCache ? undefined : readCache(context.projectRoot)?.checkoutToken
+    const checkoutResponse = await useCheckoutQuery({ projectId: selectedProject.id, next })
     const project = checkoutResponse.data.checkout.project
     await ensureProjectDir(context)
     await writeSourceFiles(context.projectRoot, project.sourceFiles)
@@ -77,4 +78,5 @@ async function run({ projectId }: Props) {
 export default command<Props>('checkout')
   .description('Checkout a project')
   .option(input('projectId').description('Id of the project to checkout').string())
+  .option(input('skipCache').description('Disable cache. By default it is enabled'))
   .handle(run)

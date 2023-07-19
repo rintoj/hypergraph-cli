@@ -25,8 +25,7 @@ export async function chooseAProject(projects: Project[], currentProject?: Proje
       .default(formatProject(currentProject)),
   )
   const [, projectId] = /.+\((.+)\)$/.exec(project) ?? []
-  const selectedProject = selectProjectById(projects, projectId)
-  return selectedProject
+  return selectProjectById(projects, projectId)
 }
 
 export async function showCurrentProject(projects: Project[]) {
