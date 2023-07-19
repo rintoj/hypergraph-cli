@@ -2,8 +2,9 @@ import chalk from 'chalk'
 import { command, input } from 'clifer'
 import { ensureDir } from 'fs-extra'
 import { toDashedName } from 'name-util'
-import { resolve } from 'path'
+import { basename, resolve } from 'path'
 import { config } from '../../config/config'
+import { runCommand } from '../../util/run-command'
 import {
   chooseAProject,
   fetchProjects,
@@ -23,19 +24,30 @@ interface Context {
   projectDir: string
 }
 
+async function getProjectRoot(projectName: string) {
+  try {
+    const [gitRoot] = await runCommand('git rev-parse --show-toplevel', { silent: true })
+    if (basename(gitRoot) === projectName) return gitRoot
+  } catch (e) {
+    if (!/not a git repository/.test(e?.[0])) throw e
+  }
+  return resolve(process.cwd(), projectName)
+}
+
 async function createContext(project: ProjectType): Promise<Context> {
   if (!project.name) throw new Error('Project is missing a name. Can not checkout the project!')
   const projectName = toDashedName((project.name ?? '').toLowerCase())
-  console.log(projectName)
+  const projectDir = await getProjectRoot(projectName)
   return {
     projectName,
     projectId: project.id,
-    projectDir: resolve(process.cwd(), projectName),
+    projectDir,
   }
 }
 
 async function ensureProjectDir({ projectDir }: Pick<Context, 'projectDir'>) {
   await ensureDir(projectDir)
+  await runCommand('git init', { cwd: projectDir, silent: true })
 }
 
 async function selectProject(projectId: string | undefined) {
