@@ -18,7 +18,8 @@
     "prettier": "prettier --write \"**/src/**/*.{ts,tsx}\" -c",
     "build": "rimraf dist && tsc -p .",
     "semantic-release": "semantic-release",
-    "cli": "ts-node src/index.ts"
+    "cli": "ts-node src/index.ts",
+    "start": "rimraf dist && tsc -p . --watch"
   },
   "license": "MIT",
   "private": false,
@@ -27,6 +28,7 @@
     "clifer": "^1.1.2",
     "express": "^4.18.2",
     "fs-extra": "^11.1.1",
+    "gql-hook-codegen": "^1.0.17",
     "graphql": "^16.7.1",
     "node-fetch": "2.6.6",
     "open": "^9.1.0",

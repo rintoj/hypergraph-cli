@@ -20,7 +20,7 @@ export async function chooseAProject(projects: Project[], currentProject?: Proje
   const { project } = await prompt(
     input('project')
       .string()
-      .prompt('Switch to project:')
+      .prompt('Select a project:')
       .choices(projects.map(project => formatProject(project)) ?? [])
       .default(formatProject(currentProject)),
   )
@@ -30,14 +30,19 @@ export async function chooseAProject(projects: Project[], currentProject?: Proje
 }
 
 export async function showCurrentProject(projects: Project[]) {
-  const currentProject = selectProjectById(projects, config.project)
+  const currentProject = selectProjectById(projects, config.projectId)
   console.log(`\n→ Current project: ${formatProject(currentProject as any, true)}\n`)
   return currentProject
 }
 
+export function saveProject(projectId: string | undefined) {
+  if (!projectId) return
+  saveConfig({ projectId })
+}
+
 export async function switchProject() {
   const projects = await fetchProjects()
-  const currentProject = selectProjectById(projects, config.project)
+  const currentProject = selectProjectById(projects, config.projectId)
   if (!projects.length) {
     throw new Error(
       `You don't have any projects under your project. Visit ${config.remote?.replace(
@@ -47,7 +52,7 @@ export async function switchProject() {
     )
   }
   const selectedProject = await chooseAProject(projects, currentProject)
-  saveConfig({ project: selectedProject?.id })
+  saveProject(selectedProject?.id)
 }
 
 export async function fetchProjects() {

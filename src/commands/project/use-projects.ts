@@ -60,5 +60,5 @@ export enum ProjectStatus {
 }
 
 export function useMyProjectsQuery(request: RequestType) {
-  return useQuery<QueryType, RequestType>(query, request)
+  return useQuery<QueryType, RequestType>(query, { variables: request })
 }

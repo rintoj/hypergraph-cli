@@ -1,22 +1,37 @@
-import { ApolloClient, HttpLink, InMemoryCache, OperationVariables } from '@apollo/client'
+import {
+  ApolloClient,
+  ApolloQueryResult,
+  HttpLink,
+  InMemoryCache,
+  OperationVariables,
+} from '@apollo/client'
+import { DocumentNode } from 'graphql'
 import fetch from 'node-fetch'
 import { config, resolveServiceUrl } from '../config/config'
 
-export function useQuery<T, R extends OperationVariables>(query: any, variables?: R) {
+export interface QueryHookOptions<RequestType> {
+  query?: DocumentNode
+  variables?: RequestType
+  skip?: boolean
+}
+
+export async function useQuery<QueryType, RequestType extends OperationVariables>(
+  query: DocumentNode,
+  options?: QueryHookOptions<RequestType>,
+): Promise<ApolloQueryResult<QueryType>> {
   const uri = resolveServiceUrl()
-  const { accessToken } = config
   const client = new ApolloClient({
     cache: new InMemoryCache(),
     link: new HttpLink({
       uri,
       fetch,
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${config?.accessToken}`,
       },
     }),
   })
-  return client.query<T, R>({
+  return client.query<QueryType, RequestType>({
     query,
-    variables,
+    ...options,
   })
 }

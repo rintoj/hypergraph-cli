@@ -1,0 +1,13 @@
+{
+  "cSpell.words": ["clifer", "FILEDIGEST", "hypergraph", "skaffold", "tsyringe"],
+  "saveAndRun": {
+    "commands": [
+      {
+        "match": ".gql.ts",
+        "cmd": "npx gql-hook-codegen generate -f ../../hypergraph/backend/schema.gql --package ../../graphql --pattern ${file}",
+        "useShortcut": false,
+        "silent": false
+      }
+    ]
+  }
+}

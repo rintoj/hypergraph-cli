@@ -46,5 +46,5 @@ export interface UserType {
 }
 
 export async function signInWithOauth({ input }: RequestType) {
-  return useMutation<MutationType, RequestType>(mutation, { input })
+  return useMutation<MutationType, RequestType>(mutation, { variables: { input } })
 }

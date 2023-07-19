@@ -1,8 +1,18 @@
-import { ApolloClient, HttpLink, InMemoryCache, OperationVariables } from '@apollo/client'
+import {
+  ApolloClient,
+  DocumentNode,
+  HttpLink,
+  InMemoryCache,
+  MutationOptions,
+  OperationVariables,
+} from '@apollo/client'
 import fetch from 'node-fetch'
 import { config, resolveServiceUrl } from '../config/config'
 
-export function useMutation<T, R extends OperationVariables>(mutation: any, variables?: R) {
+export function useMutation<MutationType, RequestType extends OperationVariables>(
+  mutation: DocumentNode,
+  options?: Omit<MutationOptions<MutationType, RequestType>, 'mutation'>,
+) {
   const uri = resolveServiceUrl()
   const client = new ApolloClient({
     cache: new InMemoryCache(),
@@ -14,8 +24,8 @@ export function useMutation<T, R extends OperationVariables>(mutation: any, vari
       },
     }),
   })
-  return client.mutate<T, R>({
+  return client.mutate<MutationType, RequestType>({
     mutation,
-    variables,
+    ...options,
   })
 }
