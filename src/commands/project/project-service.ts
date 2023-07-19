@@ -62,7 +62,7 @@ export async function fetchProjects() {
   } catch (e) {
     if (/You are unauthorized/.test(e.message)) {
       throw new Error(
-        'Error: Unable to access projects. Make sure you are logged in to select a project using "hypergraph login".',
+        'Error: Unable to access projects. Make sure you are logged in to select a project using "hypergraph auth login".',
       )
     }
     throw e
