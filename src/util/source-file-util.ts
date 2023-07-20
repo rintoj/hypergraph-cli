@@ -42,7 +42,7 @@ export function writeSourceFiles(
       console.log(`${fileExists ? yellow('[UPDATE]') : green('[CREATE]')} ${sourceFile.fileName}`)
       const extension = extname(file)
       const fileContent = sourceFile.content.join('\n')
-      const content = extension === '.ts' ? prettify(fileContent) : fileContent
+      const content = extension === '.ts' ? await prettify(fileContent) : fileContent
       await writeFile(file, content, 'utf-8')
       return { ...sourceFile, content: content.split('\n') }
     }),
