@@ -2,24 +2,34 @@ import { QueryHookOptions, useQuery } from '../../graphql'
 import gql from 'graphql-tag'
 
 const query = gql`
-  query fetchCheckout($projectId: String!) {
-    checkout(projectId: $projectId) {
-      id
-      name
-      sourceFiles {
-        fileName
-        content
+  query fetchCheckout($next: String, $projectId: String!) {
+    checkout(next: $next, projectId: $projectId) {
+      next
+      project {
+        id
+        name
+        sourceFiles {
+          fileName
+          content
+        }
       }
     }
   }
 `
 
 export interface RequestType {
+  next?: string | undefined
   projectId: string | undefined
 }
 
 export interface QueryType {
-  checkout: ProjectType
+  checkout: CheckoutResponseType
+}
+
+export interface CheckoutResponseType {
+  next?: string
+  project: ProjectType
+  __typename?: 'CheckoutResponse'
 }
 
 export interface ProjectType {

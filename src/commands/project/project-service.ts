@@ -25,8 +25,7 @@ export async function chooseAProject(projects: Project[], currentProject?: Proje
       .default(formatProject(currentProject)),
   )
   const [, projectId] = /.+\((.+)\)$/.exec(project) ?? []
-  const selectedProject = selectProjectById(projects, projectId)
-  return selectedProject
+  return selectProjectById(projects, projectId)
 }
 
 export async function showCurrentProject(projects: Project[]) {
@@ -62,7 +61,7 @@ export async function fetchProjects() {
   } catch (e) {
     if (/You are unauthorized/.test(e.message)) {
       throw new Error(
-        'Error: Unable to access projects. Make sure you are logged in to select a project using "hypergraph login".',
+        'Error: Unable to access projects. Make sure you are logged in to select a project using "hypergraph auth login".',
       )
     }
     throw e
