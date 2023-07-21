@@ -2,8 +2,8 @@ import chalk from 'chalk'
 import { command, input } from 'clifer'
 import { ensureDir } from 'fs-extra'
 import { toDashedName } from 'name-util'
-import { basename, resolve } from 'path'
 import { config } from '../../config/config'
+import { getProjectRoot } from '../../util/get-project-root'
 import { runCommand } from '../../util/run-command'
 import { writeSourceFiles } from '../../util/source-file-util'
 import { readCache, saveCache } from '../cache/cache'
@@ -25,16 +25,6 @@ interface Context {
   projectId: string
   projectName: string
   projectRoot: string
-}
-
-async function getProjectRoot(projectName: string) {
-  try {
-    const [gitRoot] = await runCommand('git rev-parse --show-toplevel', { silent: true })
-    if (basename(gitRoot) === projectName) return gitRoot
-  } catch (e) {
-    if (!/not a git repository/.test(e?.[0])) throw e
-  }
-  return resolve(process.cwd(), projectName)
 }
 
 async function createContext(project: ProjectType): Promise<Context> {
