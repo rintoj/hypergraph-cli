@@ -1,6 +1,5 @@
 import { sync } from 'fast-glob'
-import { ensureDir, readFile, writeFile } from 'fs-extra'
-import { compile } from 'handlebars'
+import { readFile } from 'fs-extra'
 import { basename, dirname, resolve } from 'path'
 
 export function listServices(projectRoot: string) {
@@ -28,21 +27,6 @@ export function listDirectories(root: string, ...patterns: string[]) {
 
 export function toRelativePathFromProjectRoot(fileName: string, projectRoot: string) {
   return fileName.replace(projectRoot + '/', '')
-}
-
-export function resolveTemplate(template: string, data: Record<string, any>) {
-  return compile(template)(data)
-}
-
-export async function writeFileWithTemplate(
-  templateFile: string,
-  targetFile: string,
-  data: Record<string, any>,
-) {
-  const template = await readFile(templateFile, 'utf8')
-  const content = resolveTemplate(template, data)
-  await ensureDir(dirname(targetFile))
-  await writeFile(targetFile, content, 'utf8')
 }
 
 export async function readPackageJSON(root: string) {

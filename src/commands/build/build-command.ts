@@ -14,7 +14,9 @@ import { readEnvironmentVariables } from './read-environment'
 
 interface Props {
   environment: string
-  expose?: number
+  apiPort?: number
+  dbPort?: number
+  clean?: boolean
 }
 const SKAFFOLD_FILE = 'skaffold.yaml'
 
@@ -22,29 +24,39 @@ async function generateSkaffoldConfig({
   projectRoot,
   projectName,
   environment,
+  env,
   namespace,
-  expose,
+  apiPort,
+  dbPort,
 }: {
   projectRoot: string
   projectName: string
   environment: string
+  env: Record<string, string>
   namespace: string
-  expose?: number
+  apiPort?: number
+  dbPort?: number
 }) {
-  const environmentFiles = resolveFileByEnvironment(
-    listFiles(projectRoot, 'env*.{yaml,yml}'),
-    environment,
-  )
   const dockerFiles = resolveFileByEnvironment(
     listFiles(projectRoot, 'services', '*', 'Docker*'),
     environment,
   )
-  const deployments = environmentFiles.concat(
-    resolveFileByEnvironment(
-      listFiles(projectRoot, 'services', '*', 'deployment*.{yaml,yml}'),
-      environment,
-    ),
+  const deployments = resolveFileByEnvironment(
+    listFiles(projectRoot, 'services', '*', 'deployment*.{yaml,yml}'),
+    environment,
   )
+  const hasPostgres =
+    deployments.find(deployment => /postgres-service/.test(deployment)) !== undefined
+  const exposeServices = [
+    { serviceName: `${projectName}-api-service`, port: 80, targetPort: apiPort },
+    dbPort !== undefined && hasPostgres
+      ? {
+          serviceName: `${projectName}-postgres-service`,
+          port: env.DB_PORT ?? 80,
+          targetPort: dbPort,
+        }
+      : (undefined as any),
+  ]
   const skaffoldConfig = buildSkaffoldConfig({
     projectName,
     namespace,
@@ -55,7 +67,7 @@ async function generateSkaffoldConfig({
     manifests: deployments.map(deployment =>
       toRelativePathFromProjectRoot(deployment, projectRoot),
     ),
-    expose,
+    exposeServices,
   })
   await writeFile(`${projectRoot}/${SKAFFOLD_FILE}`, skaffoldConfig)
 }
@@ -65,24 +77,47 @@ function setupDocker(kubeContext: string) {
   return runCommand(`kubectl config use-context ${kubeContext}`)
 }
 
-async function run({ environment, expose }: Props) {
+async function configureEnvironment(environmentFiles: string[], clean: boolean = false) {
+  if (!environmentFiles?.length) return
+  if (clean) await runCommand(`kubectl delete -f ${environmentFiles.join(' ')}`)
+  return runCommand(`kubectl apply -f ${environmentFiles.join(' ')}`)
+}
+
+async function run({ clean, environment, apiPort, dbPort }: Props) {
   const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
   const packageJSON = await readPackageJSON(projectRoot)
   const projectName = packageJSON.hypergraph.projectName
   const namespace = `${projectName}-${environment}`
-  const env = await readEnvironmentVariables(projectRoot, environment)
+  const environmentFiles = resolveFileByEnvironment(
+    listFiles(projectRoot, 'env*.{yaml,yml}'),
+    environment,
+  )
+  const env = await readEnvironmentVariables(environmentFiles)
   await generateSkaffoldConfig({
     projectName,
     projectRoot,
     environment,
+    env,
     namespace,
-    expose,
+    apiPort,
+    dbPort,
   })
   await setupDocker(env.KUBE_CONTEXT)
+  await configureEnvironment(environmentFiles, clean)
 }
 
 export default command<Props>('build')
   .description('Build a project')
   .option(input('environment').description('Environment').string().required().prompt())
-  .option(input('expose').description('Expose the graphql API through a port').number())
+  .option(
+    input('apiPort').description('Will expose the graphql API through a port, if defined').number(),
+  )
+  .option(
+    input('dbPort').description('Will expose the database through a port, if defined').number(),
+  )
+  .option(
+    input('clean').description(
+      'Do a clean build by removing previous environments, cache and config',
+    ),
+  )
   .handle(run)

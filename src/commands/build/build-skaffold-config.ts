@@ -6,12 +6,18 @@ interface DockerConfig {
   infer?: string
 }
 
+interface ExposeConfig {
+  serviceName: string
+  port?: number
+  targetPort: number
+}
+
 interface Config {
   projectName: string
   namespace: string
   dockerConfigs: DockerConfig[]
   manifests: string[]
-  expose?: number
+  exposeServices?: ExposeConfig[]
 }
 
 function generateDockerConfig(
@@ -22,14 +28,26 @@ function generateDockerConfig(
     image: `${projectName}-${serviceName}`,
     context: '.',
     docker: { dockerfile },
-    // sync: { infer: [infer] },
   }
 }
 
 function generateDockerConfigs(projectName: string, dockerConfigs: DockerConfig[]) {
   if (!dockerConfigs?.length) return {}
   const artifacts = dockerConfigs.map(config => generateDockerConfig(projectName, config))
-  return { build: { artifacts } }
+  return {
+    build: {
+      tagPolicy: {
+        customTemplate: {
+          template: '{{.GITCOMMIT}}_{{.FILEDIGEST}}',
+          components: [
+            { name: 'gitCommit', gitCommit: {} },
+            { name: 'fileDigest', inputDigest: {} },
+          ],
+        },
+      },
+      artifacts,
+    },
+  }
 }
 function generateManifests(manifests: string[]) {
   if (!manifests?.length) return {}
@@ -37,26 +55,24 @@ function generateManifests(manifests: string[]) {
 }
 
 function generatePortForwardConfig({
-  projectName,
   namespace,
-  expose,
+  exposeServices,
 }: {
-  projectName: string
   namespace: string
-  expose?: number
+  exposeServices?: ExposeConfig[]
 }) {
-  if (!expose) return {}
+  if (!exposeServices?.length) return {}
   return {
-    portForward: [
-      {
-        resourceName: `${projectName}-api-service`,
+    portForward: exposeServices
+      ?.filter(expose => !!expose)
+      .map(expose => ({
+        resourceName: expose.serviceName,
         resourceType: 'Service',
         namespace,
-        port: 80,
+        port: expose.port ?? 80,
         address: '0.0.0.0',
-        localPort: expose,
-      },
-    ],
+        localPort: expose.targetPort,
+      })),
   }
 }
 
@@ -65,7 +81,7 @@ export function buildSkaffoldConfig({
   projectName,
   dockerConfigs,
   manifests,
-  expose,
+  exposeServices,
 }: Config) {
   return jsYaml.dump({
     apiVersion: 'skaffold/v2beta24',
@@ -73,6 +89,6 @@ export function buildSkaffoldConfig({
     metadata: { name: projectName },
     ...generateDockerConfigs(projectName, dockerConfigs),
     ...generateManifests(manifests),
-    ...generatePortForwardConfig({ projectName, namespace, expose }),
+    ...generatePortForwardConfig({ namespace, exposeServices }),
   })
 }
