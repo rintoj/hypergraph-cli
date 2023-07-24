@@ -8,8 +8,7 @@ import { runCommand } from '../../util/run-command'
 import { writeSourceFiles } from '../../util/source-file-util'
 import { readCache, saveCache } from '../cache/cache'
 import { resolveProject } from '../project/project-service'
-import { ProjectType } from '../project/use-projects'
-import { useCheckoutQuery } from './use-checkout-query.gql'
+import { ProjectType, useCheckoutQuery } from './use-checkout-query.gql'
 
 interface Props {
   projectId?: string
@@ -35,7 +34,7 @@ async function ensureProjectDir({ projectRoot }: Pick<ProjectContext, 'projectRo
 async function run({ skipCache, ...props }: Props) {
   try {
     const selectedProject = await resolveProject(props)
-    const context = await createContext(selectedProject)
+    const context = await createContext(selectedProject as any)
     const next = skipCache ? undefined : readCache(context.projectRoot)?.checkoutToken
     const checkoutResponse = await useCheckoutQuery({ projectId: selectedProject.id, next })
     const project = checkoutResponse.data.checkout.project
