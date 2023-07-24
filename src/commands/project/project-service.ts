@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import { input, prompt } from 'clifer'
 import { config, saveConfig } from '../../config/config'
+import { readEnvironment } from '../../environment/read-environment'
 import { ProjectType, useMyProjectsQuery } from './use-projects'
 
 type Project = Pick<ProjectType, 'id' | 'name'>
@@ -66,4 +67,18 @@ export async function fetchProjects() {
     }
     throw e
   }
+}
+
+export async function resolveProject(props?: { projectId?: string }) {
+  const env = await readEnvironment()
+  const projects = await fetchProjects()
+  let projectId = props?.projectId ?? env?.projectId
+  if (!projectId) {
+    const project = await chooseAProject(projects)
+    if (!project) throw new Error('No project is selected!')
+    projectId = project.id
+  }
+  let selectedProject = selectProjectById(projects, projectId)
+  if (!selectedProject) throw new Error('Failed to select a project!')
+  return selectedProject
 }
