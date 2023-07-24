@@ -1,12 +1,9 @@
-import { command, input, prompt } from 'clifer'
+import { command, input } from 'clifer'
+import { resolveProject } from '../project/project-service'
+import { readFile } from 'fs-extra'
+import { useSaveSourceFilesMutation } from './use-save-source-files-mutation.gql'
 import { readEnvironment } from '../../environment/read-environment'
-import { config } from '../../config/config'
-import {
-  chooseAProject,
-  fetchProjects,
-  resolveProject,
-  selectProjectById,
-} from '../project/project-service'
+import { runCommand } from '../../util/run-command'
 
 interface Props {
   projectId: string
@@ -15,8 +12,20 @@ interface Props {
 
 async function run(props: Props) {
   const project = await resolveProject(props)
+  const env = await readEnvironment()
   const files = props.sourceFile.split(',')
-  console.log('save source file', { files, project })
+  const sourceFiles = await Promise.all(
+    files.map(async file => ({
+      fileName: file.replace(env?.projectRoot + '/', ''),
+      content: await readFile(file, 'utf-8'),
+    })),
+  )
+  await useSaveSourceFilesMutation({
+    variables: {
+      input: { projectId: project.id, sourceFiles },
+    },
+  })
+  await runCommand('hypergraph checkout', { cwd: `${env?.projectRoot}/backend` })
 }
 
 export default command<Props>('save')
