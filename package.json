@@ -36,7 +36,8 @@
     "prettier": "^3.0.0",
     "react": "^18.2.0",
     "shelljs": "^0.8.5",
-    "string-width": "2.0.0"
+    "string-width": "2.0.0",
+    "tsds-tools": "^1.0.4"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",
