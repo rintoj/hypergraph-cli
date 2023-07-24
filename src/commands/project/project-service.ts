@@ -2,7 +2,8 @@ import chalk from 'chalk'
 import { input, prompt } from 'clifer'
 import { config, saveConfig } from '../../config/config'
 import { readEnvironment } from '../../environment/read-environment'
-import { ProjectType, useMyProjectsQuery } from './use-projects'
+import { ProjectType } from '../checkout/use-checkout-query.gql'
+import { useMyProjectsQuery } from './use-projects'
 
 type Project = Pick<ProjectType, 'id' | 'name'>
 
@@ -69,16 +70,18 @@ export async function fetchProjects() {
   }
 }
 
-export async function resolveProject(props?: { projectId?: string }) {
-  const env = await readEnvironment()
-  const projects = await fetchProjects()
-  let projectId = props?.projectId ?? env?.projectId
-  if (!projectId) {
-    const project = await chooseAProject(projects)
-    if (!project) throw new Error('No project is selected!')
-    projectId = project.id
+export async function resolveProject(props?: { projectId?: string }): Promise<Project> {
+  if (props?.projectId) {
+    const projects = await fetchProjects()
+    const project = selectProjectById(projects, props.projectId)
+    if (!project) throw new Error(`Invalid project id: ${props.projectId}`)
   }
-  let selectedProject = selectProjectById(projects, projectId)
-  if (!selectedProject) throw new Error('Failed to select a project!')
-  return selectedProject
+  const env = await readEnvironment()
+  if (env?.projectId) {
+    return { id: env.projectId, name: env.projectName }
+  }
+  const projects = await fetchProjects()
+  const project = await chooseAProject(projects)
+  if (!project) throw new Error('No project is selected!')
+  return project
 }
