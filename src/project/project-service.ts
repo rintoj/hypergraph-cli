@@ -1,8 +1,8 @@
 import chalk from 'chalk'
 import { input, prompt } from 'clifer'
-import { config, saveConfig } from '../../config/config'
-import { readEnvironment } from '../../environment/read-environment'
-import { ProjectType } from '../checkout/use-checkout-query.gql'
+import { config, saveConfig } from '../config/config'
+import { readEnvironment } from '../environment/read-environment'
+import { ProjectType } from '../commands/checkout/use-checkout-query.gql'
 import { useMyProjectsQuery } from './use-projects'
 
 type Project = Pick<ProjectType, 'id' | 'name'>

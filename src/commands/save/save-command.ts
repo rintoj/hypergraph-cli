@@ -1,5 +1,5 @@
 import { command, input } from 'clifer'
-import { resolveProject } from '../project/project-service'
+import { resolveProject } from '../../project/project-service'
 import { readFile } from 'fs-extra'
 import { useSaveSourceFilesMutation } from './use-save-source-files-mutation.gql'
 import { readEnvironment } from '../../environment/read-environment'

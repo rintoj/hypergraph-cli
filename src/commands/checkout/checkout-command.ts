@@ -7,7 +7,7 @@ import { getProjectRoot } from '../../util/get-project-root'
 import { runCommand } from '../../util/run-command'
 import { writeSourceFiles } from '../../util/source-file-util'
 import { readCache, saveCache } from '../cache/cache'
-import { resolveProject } from '../project/project-service'
+import { resolveProject } from '../../project/project-service'
 import { ProjectType, useCheckoutQuery } from './use-checkout-query.gql'
 
 interface Props {

@@ -1,5 +1,5 @@
 import gql from 'graphql-tag'
-import { useQuery } from '../../graphql/use-query'
+import { useQuery } from '../graphql/use-query'
 
 const query = gql`
   query fetchMyProjects($pagination: PaginationInput) {
