@@ -1,7 +1,9 @@
 import chalk from 'chalk'
 import { input, prompt } from 'clifer'
-import { config, saveConfig } from '../../config/config'
-import { ProjectType, useMyProjectsQuery } from './use-projects'
+import { config, saveConfig } from '../config/config'
+import { readEnvironment } from '../environment/read-environment'
+import { ProjectType } from '../commands/checkout/use-checkout-query.gql'
+import { useMyProjectsQuery } from './use-projects'
 
 type Project = Pick<ProjectType, 'id' | 'name'>
 
@@ -55,15 +57,22 @@ export async function switchProject() {
 }
 
 export async function fetchProjects() {
-  try {
-    const results = await useMyProjectsQuery({ pagination: { limit: 200 } })
-    return results.data.myProjects?.items ?? []
-  } catch (e) {
-    if (/You are unauthorized/.test(e.message)) {
-      throw new Error(
-        'Error: Unable to access projects. Make sure you are logged in to select a project using "hypergraph auth login".',
-      )
-    }
-    throw e
+  const results = await useMyProjectsQuery({ pagination: { limit: 200 } })
+  return results.data.myProjects?.items ?? []
+}
+
+export async function resolveProject(props?: { projectId?: string }): Promise<Project> {
+  if (props?.projectId) {
+    const projects = await fetchProjects()
+    const project = selectProjectById(projects, props.projectId)
+    if (!project) throw new Error(`Invalid project id: ${props.projectId}`)
   }
+  const env = await readEnvironment()
+  if (env?.projectId) {
+    return { id: env.projectId, name: env.projectName }
+  }
+  const projects = await fetchProjects()
+  const project = await chooseAProject(projects)
+  if (!project) throw new Error('No project is selected!')
+  return project
 }
