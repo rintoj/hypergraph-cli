@@ -1,5 +1,6 @@
 import { command, input } from 'clifer'
-import { readFile, writeFile } from 'fs-extra'
+import { writeFile } from 'fs-extra'
+import { readEnvironmentVariables } from '../../environment'
 import { getProjectRoot } from '../../util/get-project-root'
 import {
   listFiles,
@@ -10,7 +11,6 @@ import {
 import { resolveFileByEnvironment } from '../../util/resolve-file-by-environment'
 import { runCommand } from '../../util/run-command'
 import { buildSkaffoldConfig } from './build-skaffold-config'
-import { readEnvironmentVariables } from './read-environment'
 
 interface Props {
   environment: string
@@ -86,7 +86,15 @@ async function configureEnvironment(environmentFiles: string[], clean: boolean =
 async function run({ clean, environment, apiPort, dbPort }: Props) {
   const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
   const packageJSON = await readPackageJSON(projectRoot)
-  const projectName = packageJSON.hypergraph.projectName
+  const projectName = packageJSON?.hypergraph?.projectName
+  if (!projectName)
+    throw new Error(`Project name is missing. Define it under package.json as
+  {
+    "hypergraph": {
+      "projectName": "PROJECT_NAME"
+    }
+  }
+  `)
   const namespace = `${projectName}-${environment}`
   const environmentFiles = resolveFileByEnvironment(
     listFiles(projectRoot, 'env*.{yaml,yml}'),
