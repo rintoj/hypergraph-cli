@@ -15,7 +15,7 @@ import { buildSkaffoldConfig } from './build-skaffold-config'
 
 interface Props {
   environment: string
-  apiPort?: number
+  api?: string
   dbPort?: number
   clean?: boolean
 }
@@ -27,7 +27,7 @@ async function generateSkaffoldConfig({
   environment,
   env,
   namespace,
-  apiPort,
+  api,
   dbPort,
 }: {
   projectRoot: string
@@ -35,7 +35,7 @@ async function generateSkaffoldConfig({
   environment: string
   env: Record<string, string>
   namespace: string
-  apiPort?: number
+  api?: string
   dbPort?: number
 }) {
   const dockerFiles = resolveFileByEnvironment(
@@ -48,16 +48,21 @@ async function generateSkaffoldConfig({
   )
   const hasPostgres =
     deployments.find(deployment => /postgres-service/.test(deployment)) !== undefined
-  const exposeServices = [
-    { serviceName: `${projectName}-api-service`, port: 80, targetPort: apiPort },
-    dbPort !== undefined && hasPostgres
-      ? {
-          serviceName: `${projectName}-postgres-service`,
-          port: env.DB_PORT ?? 80,
-          targetPort: dbPort,
-        }
-      : (undefined as any),
-  ]
+  const exposeServices = api
+    ?.split(',')
+    .map(service => {
+      const [serviceName, targetPort = '4000'] = service.split(':')
+      return { serviceName, port: 80, targetPort: parseInt(targetPort, undefined) }
+    })
+    .concat([
+      dbPort !== undefined && hasPostgres
+        ? {
+            serviceName: `${projectName}-postgres-service`,
+            port: env.DB_PORT ?? 80,
+            targetPort: dbPort,
+          }
+        : (undefined as any),
+    ])
   const skaffoldConfig = buildSkaffoldConfig({
     projectName,
     namespace,
@@ -84,7 +89,7 @@ async function configureEnvironment(environmentFiles: string[], clean: boolean =
   return runCommand(`kubectl apply -f ${environmentFiles.join(' ')}`)
 }
 
-async function run({ clean, environment, apiPort, dbPort }: Props) {
+async function run({ clean, environment, api, dbPort }: Props) {
   return withErrorHandler(async () => {
     const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
     const packageJSON = await readPackageJSON(projectRoot)
@@ -109,7 +114,7 @@ async function run({ clean, environment, apiPort, dbPort }: Props) {
       environment,
       env,
       namespace,
-      apiPort,
+      api,
       dbPort,
     })
     await setupDocker(env.KUBE_CONTEXT)
@@ -121,7 +126,9 @@ export default command<Props>('build')
   .description('Build a project')
   .option(input('environment').description('Environment').string().required().prompt())
   .option(
-    input('apiPort').description('Will expose the graphql API through a port, if defined').number(),
+    input('api')
+      .description('List all the apis in the format "name:port" so as to expose to localhost')
+      .string(),
   )
   .option(
     input('dbPort').description('Will expose the database through a port, if defined').number(),

@@ -18,7 +18,7 @@ export function listPackages(packageRoot: string) {
 }
 
 export function listFiles(root: string, ...patterns: string[]) {
-  return sync(resolve(root, ...patterns), { onlyFiles: true })
+  return sync(resolve(root, ...patterns), { dot: true, onlyFiles: true })
 }
 
 export function listDirectories(root: string, ...patterns: string[]) {
