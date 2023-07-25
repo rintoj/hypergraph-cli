@@ -57,17 +57,8 @@ export async function switchProject() {
 }
 
 export async function fetchProjects() {
-  try {
-    const results = await useMyProjectsQuery({ pagination: { limit: 200 } })
-    return results.data.myProjects?.items ?? []
-  } catch (e) {
-    if (/You are unauthorized/.test(e.message)) {
-      throw new Error(
-        'Error: Unable to access projects. Make sure you are logged in to select a project using "hypergraph auth login".',
-      )
-    }
-    throw e
-  }
+  const results = await useMyProjectsQuery({ pagination: { limit: 200 } })
+  return results.data.myProjects?.items ?? []
 }
 
 export async function resolveProject(props?: { projectId?: string }): Promise<Project> {

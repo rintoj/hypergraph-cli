@@ -1,13 +1,13 @@
-import chalk from 'chalk'
 import { command, input } from 'clifer'
 import { ensureDir } from 'fs-extra'
 import { toDashedName } from 'name-util'
 import { ProjectContext } from '../../environment/read-environment'
+import { resolveProject } from '../../project/project-service'
+import { withErrorHandler } from '../../util/error-handler'
 import { getProjectRoot } from '../../util/get-project-root'
 import { runCommand } from '../../util/run-command'
 import { writeSourceFiles } from '../../util/source-file-util'
-import { readCache, saveCache } from '../cache/cache'
-import { resolveProject } from '../../project/project-service'
+import { readCache, saveCache } from '../../cache/cache'
 import { ProjectType, useCheckoutQuery } from './use-checkout-query.gql'
 
 interface Props {
@@ -32,7 +32,7 @@ async function ensureProjectDir({ projectRoot }: Pick<ProjectContext, 'projectRo
 }
 
 async function run({ skipCache, ...props }: Props) {
-  try {
+  return withErrorHandler(async () => {
     const selectedProject = await resolveProject(props)
     const context = await createContext(selectedProject as any)
     const next = skipCache ? undefined : readCache(context.projectRoot)?.checkoutToken
@@ -41,9 +41,7 @@ async function run({ skipCache, ...props }: Props) {
     await ensureProjectDir(context)
     await writeSourceFiles(context.projectRoot, project.sourceFiles)
     saveCache(context.projectRoot, { checkoutToken: checkoutResponse.data.checkout.next })
-  } catch (e) {
-    console.error(chalk.red(e.message))
-  }
+  })
 }
 
 export default command<Props>('checkout')

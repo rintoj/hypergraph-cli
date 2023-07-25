@@ -1,6 +1,7 @@
 import { command, input } from 'clifer'
 import { writeFile } from 'fs-extra'
 import { readEnvironmentVariables } from '../../environment'
+import { withErrorHandler } from '../../util/error-handler'
 import { getProjectRoot } from '../../util/get-project-root'
 import {
   listFiles,
@@ -84,34 +85,36 @@ async function configureEnvironment(environmentFiles: string[], clean: boolean =
 }
 
 async function run({ clean, environment, apiPort, dbPort }: Props) {
-  const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
-  const packageJSON = await readPackageJSON(projectRoot)
-  const projectName = packageJSON?.hypergraph?.projectName
-  if (!projectName)
-    throw new Error(`Project name is missing. Define it under package.json as
+  return withErrorHandler(async () => {
+    const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
+    const packageJSON = await readPackageJSON(projectRoot)
+    const projectName = packageJSON?.hypergraph?.projectName
+    if (!projectName)
+      throw new Error(`Project name is missing. Define it under package.json as
   {
     "hypergraph": {
       "projectName": "PROJECT_NAME"
     }
   }
   `)
-  const namespace = `${projectName}-${environment}`
-  const environmentFiles = resolveFileByEnvironment(
-    listFiles(projectRoot, 'env*.{yaml,yml}'),
-    environment,
-  )
-  const env = await readEnvironmentVariables(environmentFiles)
-  await generateSkaffoldConfig({
-    projectName,
-    projectRoot,
-    environment,
-    env,
-    namespace,
-    apiPort,
-    dbPort,
+    const namespace = `${projectName}-${environment}`
+    const environmentFiles = resolveFileByEnvironment(
+      listFiles(projectRoot, 'env*.{yaml,yml}'),
+      environment,
+    )
+    const env = await readEnvironmentVariables(environmentFiles)
+    await generateSkaffoldConfig({
+      projectName,
+      projectRoot,
+      environment,
+      env,
+      namespace,
+      apiPort,
+      dbPort,
+    })
+    await setupDocker(env.KUBE_CONTEXT)
+    await configureEnvironment(environmentFiles, clean)
   })
-  await setupDocker(env.KUBE_CONTEXT)
-  await configureEnvironment(environmentFiles, clean)
 }
 
 export default command<Props>('build')
