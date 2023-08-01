@@ -3,7 +3,7 @@ import { readFile } from 'fs-extra'
 import { readEnvironment } from '../../environment/read-environment'
 import { resolveProject } from '../../project/project-service'
 import { withErrorHandler } from '../../util/error-handler'
-import { runCommand } from '../../util/run-command'
+import { runCheckout } from '../checkout/checkout-command'
 import { useSaveSourceFilesMutation } from './use-save-source-files-mutation.gql'
 
 interface Props {
@@ -27,7 +27,7 @@ function run(props: Props) {
         input: { projectId: project.id, sourceFiles },
       },
     })
-    await runCommand('hypergraph checkout', { cwd: `${env?.projectRoot}/backend` })
+    await runCheckout(props)
   })
 }
 

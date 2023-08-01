@@ -31,7 +31,7 @@ async function ensureProjectDir({ projectRoot }: Pick<ProjectContext, 'projectRo
   await runCommand('git init', { cwd: projectRoot, silent: true })
 }
 
-async function run({ skipCache, ...props }: Props) {
+export async function runCheckout({ skipCache, ...props }: Props) {
   return withErrorHandler(async () => {
     const selectedProject = await resolveProject(props)
     const context = await createContext(selectedProject as any)
@@ -48,4 +48,4 @@ export default command<Props>('checkout')
   .description('Checkout a project')
   .option(input('projectId').description('Id of the project to checkout').string())
   .option(input('skipCache').description('Disable cache. By default it is enabled'))
-  .handle(run)
+  .handle(runCheckout)
