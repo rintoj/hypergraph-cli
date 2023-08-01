@@ -28,6 +28,9 @@ function generateDockerConfig(
     image: `${projectName}-${serviceName}`,
     context: '.',
     docker: { dockerfile },
+    sync: {
+      infer: ['**/*.{js,ts,json}'],
+    },
   }
 }
 
@@ -36,15 +39,6 @@ function generateDockerConfigs(projectName: string, dockerConfigs: DockerConfig[
   const artifacts = dockerConfigs.map(config => generateDockerConfig(projectName, config))
   return {
     build: {
-      tagPolicy: {
-        customTemplate: {
-          template: '{{.GITCOMMIT}}_{{.FILEDIGEST}}',
-          components: [
-            { name: 'gitCommit', gitCommit: {} },
-            { name: 'fileDigest', inputDigest: {} },
-          ],
-        },
-      },
       artifacts,
     },
   }
