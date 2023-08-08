@@ -11,6 +11,7 @@ const query = gql`
         sourceFiles {
           fileName
           content
+          status
         }
       }
     }
@@ -39,9 +40,15 @@ export interface ProjectType {
   __typename?: 'Project'
 }
 
+export enum SourceFileStatus {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+}
+
 export interface SourceFileType {
   fileName: string
   content: string[]
+  status: SourceFileStatus
   __typename?: 'SourceFile'
 }
 
