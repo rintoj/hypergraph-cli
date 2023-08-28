@@ -6529,10 +6529,10 @@ ts-node@^10.0.0, ts-node@^10.9.1:
     v8-compile-cache-lib "^3.0.1"
     yn "3.1.1"
 
-tsds-tools@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/tsds-tools/-/tsds-tools-1.0.4.tgz#1680cbd72d47172d5c47d18f393cefe919d6f821"
-  integrity sha512-yM4KsU2CO+EOGhomvEfPJJBJzIcOS3KZjx7CFwVCUNKvHxRSYHJIUhjBgUH+Njzo/pG+m/+hH3WaOZ8+1OXXFQ==
+tsds-tools@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/tsds-tools/-/tsds-tools-1.0.6.tgz#6305c18d92de44d2a4d92de1e15fe13233ac5535"
+  integrity sha512-z9CLbJOa1Tzc/3h2Je9vNuneodpXBVkgKKZ/IMknQ3czRWStNwchPaoLOI28thwaJWJpemrddInnl9M7tQpxfw==
   dependencies:
     chalk "4.1.2"
     enquirer "^2.3.6"
