@@ -3,6 +3,7 @@ import auth from './auth/auth-command'
 import build from './build/build-command'
 import checkout from './checkout/checkout-command'
 import config from './config/config-command'
+import init from './init/init-command'
 import save from './save/save-command'
 
 export default cli('hypergraph')
@@ -10,4 +11,5 @@ export default cli('hypergraph')
   .command(config)
   .command(checkout)
   .command(build)
+  .command(init)
   .command(save)
