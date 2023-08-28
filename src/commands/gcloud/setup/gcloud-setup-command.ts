@@ -1,7 +1,7 @@
-import { command, input } from 'clifer'
-import { getProjectRoot, listFiles, resolveFileByEnvironment, runCommand } from '../../../util'
-import { readEnv, readEnvironmentVariables } from '../../../environment'
 import chalk from 'chalk'
+import { command, input } from 'clifer'
+import { readEnv } from '../../../environment'
+import { runCommand } from '../../../util'
 
 interface Props {
   environment: string
@@ -14,6 +14,8 @@ export async function setupClusterConfig({ environment }: Props) {
     if (!PROJECT_ID) throw new Error(`Environment "${environment}" is missing PROJECT_ID!`)
     if (!REGION) throw new Error(`Environment "${environment}" is missing REGION!`)
     if (!CLUSTER) throw new Error(`Environment "${environment}" is missing CLUSTER!`)
+    await runCommand(`gcloud config set project ${PROJECT_ID}`)
+    await runCommand('gcloud auth configure-docker gcr.io --quiet')
     await runCommand(
       `gcloud container clusters get-credentials ${CLUSTER} --region ${REGION} --project ${PROJECT_ID}`,
     )

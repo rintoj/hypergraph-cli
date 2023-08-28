@@ -14,7 +14,6 @@ async function run({ environment }: Props) {
     const { PROJECT_ID } = env
     await runCommand('brew install --cask google-cloud-sdk')
     await runCommand('gcloud auth login --quiet')
-    if (PROJECT_ID) await runCommand(`gcloud config set project ${PROJECT_ID}`)
     await runCommand('gcloud components install gke-gcloud-auth-plugin --quiet')
     await setupClusterConfig({ environment })
   } catch (e) {
