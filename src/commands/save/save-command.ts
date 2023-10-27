@@ -1,4 +1,5 @@
 import { command, input } from 'clifer'
+import { sync } from 'fast-glob'
 import { readFile } from 'fs-extra'
 import { readEnvironment } from '../../environment/read-environment'
 import { resolveProject } from '../../project/project-service'
@@ -13,9 +14,9 @@ interface Props {
 
 function run(props: Props) {
   return withErrorHandler(async () => {
+    const files = sync(props.sourceFile ?? '**/*.hg.ts')
     const project = await resolveProject(props)
     const env = await readEnvironment()
-    const files = props.sourceFile.split(',')
     const sourceFiles = await Promise.all(
       files.map(async file => ({
         fileName: file.replace(env?.projectRoot + '/', ''),
@@ -35,7 +36,7 @@ export default command<Props>('save')
   .description('Save a source file to a given project')
   .argument(
     input('sourceFile')
-      .description('Source file(s) to upload. Separate each name with a coma')
+      .description('Source file(s) to upload. You may use glob patterns here')
       .string()
       .required(),
   )
