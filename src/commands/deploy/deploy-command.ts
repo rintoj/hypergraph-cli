@@ -126,7 +126,6 @@ async function run({ create, clean, environment }: Props) {
       environment,
     )
     const env = await readEnvironmentVariables(environmentFiles)
-    await runCommand(`hypergraph build --environment=${environment} ${clean ? '--clean' : ''}`)
     await checkIfAuthenticated()
     await configureProject(env)
     if (create) {
@@ -144,6 +143,7 @@ async function run({ create, clean, environment }: Props) {
         throw new Error(`Missing required certificate: ${projectName}-${environment}-certificate`)
       }
     }
+    await runCommand(`hypergraph build --environment=${environment} ${clean ? '--clean' : ''}`)
     await runCommand(
       `skaffold run --namespace=${projectName}-${environment} --default-repo=${env.CONTAINER_REGISTRY} --status-check=false`,
     )
@@ -154,9 +154,13 @@ export default command<Props>('deploy')
   .description('Deploy a project')
   .option(input('environment').description('Environment').string().required().prompt())
   .option(
+    input('create').description(
+      'Create missing resources such as cluster, container registry and certificates as needed',
+    ),
+  )
+  .option(
     input('clean').description(
       'Do a clean build by removing previous environments, cache and config',
     ),
   )
-  .option(input('create').description('Create missing resources such as cluster, certificates etc'))
   .handle(run)
