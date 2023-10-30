@@ -89,6 +89,12 @@ async function configureEnvironment(environmentFiles: string[], clean: boolean =
   return runCommand(`kubectl apply -f ${environmentFiles.join(' ')}`)
 }
 
+async function setupCluster(env: any) {
+  if (env.CLOUD !== 'gcloud') return
+  const command = `gcloud container clusters get-credentials ${env.CLUSTER} --region ${env.REGION} --project ${env.PROJECT_ID}`
+  await runCommand(command)
+}
+
 async function run({ clean, environment, api, dbPort }: Props) {
   return withErrorHandler(async () => {
     const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
@@ -118,6 +124,7 @@ async function run({ clean, environment, api, dbPort }: Props) {
       dbPort,
     })
     await setupDocker(env.KUBE_CONTEXT)
+    await setupCluster(env)
     await configureEnvironment(environmentFiles, clean)
   })
 }
