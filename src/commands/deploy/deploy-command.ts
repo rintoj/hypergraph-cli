@@ -29,7 +29,6 @@ async function createCluster(env: any) {
   if (!REGION) throw new Error('Environment is missing REGION')
   if (await checkIfClusterExists(env)) return
   const command = `gcloud container clusters create-auto ${CLUSTER} \
-    --description="Hypergraph managed certificate" \
     --location=${REGION} \
     --project=${PROJECT_ID}`
   await runCommand(command)
@@ -62,32 +61,6 @@ async function createContainerRegistry(env: any) {
   const command = `gcloud artifacts repositories create ${repository} \
     --repository-format=docker \
     --location=${location}`
-  await runCommand(command)
-}
-
-async function checkIfCertificateExists(env: any) {
-  try {
-    const { PROJECT_NAME, ENVIRONMENT } = env
-    if (!PROJECT_NAME) throw new Error('Environment is missing PROJECT_NAME')
-    if (!ENVIRONMENT) throw new Error('Environment is missing ENVIRONMENT')
-    const certificateName = `${PROJECT_NAME}-${ENVIRONMENT}-certificate`
-    const output = await runCommand(`gcloud compute ssl-certificates describe ${certificateName}`)
-    if (output.length) return true
-  } catch {
-    return false
-  }
-}
-async function createCertificate(env: any) {
-  const { PROJECT_NAME, ENVIRONMENT, DOMAIN } = env
-  if (!DOMAIN) throw new Error('Environment is missing DOMAIN')
-  if (!PROJECT_NAME) throw new Error('Environment is missing PROJECT_NAME')
-  if (!ENVIRONMENT) throw new Error('Environment is missing ENVIRONMENT')
-  const certificateName = `${PROJECT_NAME}-${ENVIRONMENT}-certificate`
-  if (await checkIfCertificateExists(env)) return
-  const command = `gcloud compute ssl-certificates create ${certificateName} \
-    --description="Hypergraph managed certificate" \
-    --domains=${DOMAIN} \
-    --global`
   await runCommand(command)
 }
 
@@ -131,16 +104,12 @@ async function run({ create, clean, environment }: Props) {
     if (create) {
       await createCluster(env)
       await createContainerRegistry(env)
-      await createCertificate(env)
     } else {
       if (!(await checkIfClusterExists(env))) {
         throw new Error(`Missing cluster: ${env.CLUSTER}`)
       }
       if (!(await checkIfContainerRegistryExists(env))) {
         throw new Error(`Missing container registry : ${env.CONTAINER_REGISTRY}`)
-      }
-      if (!(await checkIfCertificateExists(env))) {
-        throw new Error(`Missing required certificate: ${projectName}-${environment}-certificate`)
       }
     }
     await runCommand(`hypergraph build --environment=${environment} ${clean ? '--clean' : ''}`)
