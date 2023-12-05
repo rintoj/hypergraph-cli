@@ -12,7 +12,7 @@ interface Props {
   sourceFile: string
 }
 
-function run(props: Props) {
+export function saveSourceFiles(props: Props) {
   return withErrorHandler(async () => {
     const files = sync(props.sourceFile ?? '**/*.hg.ts')
     const project = await resolveProject(props)
@@ -41,4 +41,4 @@ export default command<Props>('save')
       .required(),
   )
   .option(input('projectId').description('Project ID in Hypergraph').string())
-  .handle(run)
+  .handle(saveSourceFiles)
