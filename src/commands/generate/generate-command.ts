@@ -67,9 +67,12 @@ export async function runCheckout(props: Props) {
         } else {
           await ensureProjectDir(projectContext)
           await writeSourceFiles(projectContext.projectRoot, project.sourceFiles as any)
-          const sourceFile = `**/{${project.sourceFiles
-            ?.map(sourceFile => basename(sourceFile.fileName))
-            .join(',')}}`
+          const sourceFile =
+            project.sourceFiles?.length > 1
+              ? `**/{${project.sourceFiles
+                  ?.map(sourceFile => basename(sourceFile.fileName))
+                  .join(',')}}`
+              : project.sourceFiles?.[0]?.fileName?.replace('backend/', '')
           await saveSourceFiles({ projectId: selectedProject.id, sourceFile })
         }
         continue
