@@ -7,7 +7,7 @@ import create from './create/create-command'
 import deploy from './deploy/deploy-command'
 import gcloud from './gcloud/gcloud-command'
 import generate from './generate/generate-command'
-import init from './init/init-command'
+import project from './project/project-command'
 import save from './save/save-command'
 
 export default cli('hypergraph')
@@ -19,5 +19,5 @@ export default cli('hypergraph')
   .command(deploy)
   .command(gcloud)
   .command(generate)
-  .command(init)
+  .command(project)
   .command(save)
