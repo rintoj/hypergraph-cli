@@ -1,5 +1,5 @@
 import gql from 'graphql-tag'
-import { MutationHookOptions, useMutation } from '../../graphql'
+import { MutationHookOptions, useMutation } from '../../../graphql'
 
 const mutation = gql`
   mutation createProject($input: CreateProjectMutationInput!) {

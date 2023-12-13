@@ -1,4 +1,4 @@
-import { QueryHookOptions, useQuery } from '../../graphql'
+import { QueryHookOptions, useQuery } from '../../../graphql'
 import gql from 'graphql-tag'
 
 const query = gql`

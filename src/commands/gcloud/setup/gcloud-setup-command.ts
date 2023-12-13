@@ -25,6 +25,6 @@ export async function setupClusterConfig({ environment }: Props) {
 }
 
 export default command<Props>('setup')
-  .description('Configure Google Cloud environment')
-  .option(input('environment').description('Select environment').string().required())
+  .description('Configure the Google Cloud environment')
+  .option(input('environment').description('Select the target environment').string().required())
   .handle(setupClusterConfig)

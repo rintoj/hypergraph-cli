@@ -22,6 +22,6 @@ async function run({ environment }: Props) {
 }
 
 export default command<Props>('install')
-  .description('Install all the required libraries for Google Cloud')
-  .option(input('environment').description('Environment').string().required())
+  .description('Install all required libraries for Google Cloud')
+  .option(input('environment').description('Specify the target environment').string().required())
   .handle(run)
