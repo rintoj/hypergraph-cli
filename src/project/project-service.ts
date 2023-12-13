@@ -66,6 +66,7 @@ export async function resolveProject(props?: { projectId?: string }): Promise<Pr
     const projects = await fetchProjects()
     const project = selectProjectById(projects, props.projectId)
     if (!project) throw new Error(`Invalid project id: ${props.projectId}`)
+    return project
   }
   const env = await readEnvironment()
   if (env?.projectId) {

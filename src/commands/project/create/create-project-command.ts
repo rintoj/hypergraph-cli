@@ -21,5 +21,5 @@ async function createProject({ projectName }: Props) {
 
 export default command<Props>('create')
   .description('Create a project')
-  .option(input('projectName').description('Name of the project').string().prompt())
+  .argument(input('projectName').description('Name of the project').string().prompt())
   .handle(createProject)
