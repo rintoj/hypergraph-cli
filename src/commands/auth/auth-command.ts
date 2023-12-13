@@ -4,7 +4,7 @@ import logout from './logout/logout-command'
 import user from './user/user-command'
 
 export default command('auth')
-  .description('Authentication commands')
+  .description('Commands for managing authentication and access.')
   .command(login)
   .command(logout)
   .command(user)

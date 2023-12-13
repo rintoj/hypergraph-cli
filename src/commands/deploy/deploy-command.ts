@@ -87,7 +87,7 @@ async function run({ create, clean, environment }: Props) {
     const packageJSON = await readPackageJSON(projectRoot)
     const projectName = packageJSON?.hypergraph?.projectName
     if (!projectName)
-      throw new Error(`Project name is missing. Define it under package.json as
+      throw new Error(`Project name is missing. Define it under package.json as follows:
   {
     "hypergraph": {
       "projectName": "PROJECT_NAME"
@@ -121,15 +121,21 @@ async function run({ create, clean, environment }: Props) {
 
 export default command<Props>('deploy')
   .description('Deploy a project')
-  .option(input('environment').description('Environment').string().required().prompt())
+  .option(
+    input('environment')
+      .description('Specify the deployment environment')
+      .string()
+      .required()
+      .prompt(),
+  )
   .option(
     input('create').description(
-      'Create missing resources such as cluster, container registry and certificates as needed',
+      'Create missing resources like cluster, container registry, and certificates as needed',
     ),
   )
   .option(
     input('clean').description(
-      'Do a clean build by removing previous environments, cache and config',
+      'Perform a clean build by removing previous environments, cache, and config',
     ),
   )
   .handle(run)

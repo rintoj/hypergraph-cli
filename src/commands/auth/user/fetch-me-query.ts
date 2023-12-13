@@ -6,6 +6,7 @@ const query = gql`
     me {
       id
       name
+      email
     }
   }
 `
@@ -17,6 +18,7 @@ export interface QueryType {
 export interface UserType {
   id: string
   name?: string
+  email?: string
   __typename?: 'User'
 }
 

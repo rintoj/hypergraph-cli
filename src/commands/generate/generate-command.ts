@@ -99,5 +99,5 @@ export async function runCheckout(props: Props) {
 
 export default command<Props>('generate')
   .description('Generate project models and resolvers using AI')
-  .option(input('projectId').description('Id of the project').string())
+  .option(input('projectId').description('Specify the ID of the project').string())
   .handle(runCheckout)

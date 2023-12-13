@@ -92,10 +92,10 @@ async function run({ provider }: Props) {
 }
 
 export default command<Props>('login')
-  .description('Login to your Hypergraph account')
+  .description('Access your Hypergraph account by logging in')
   .option(
     input('provider')
-      .description('Login with Google or Github')
+      .description('Authenticate using Google or Github credentials.')
       .string()
       .prompt('How would you like to login?')
       .choices([AuthenticationProvider.GOOGLE, AuthenticationProvider.GITHUB])

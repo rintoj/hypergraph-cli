@@ -2,6 +2,7 @@ import { cli } from 'clifer'
 import auth from './auth/auth-command'
 import build from './build/build-command'
 import checkout from './checkout/checkout-command'
+import collaborator from './collaborator/collaborator-command'
 import config from './config/config-command'
 import create from './create/create-command'
 import deploy from './deploy/deploy-command'
@@ -13,9 +14,10 @@ import save from './save/save-command'
 export default cli('hypergraph')
   .command(auth)
   .command(build)
+  .command(checkout)
+  .command(collaborator)
   .command(config)
   .command(create)
-  .command(checkout)
   .command(deploy)
   .command(gcloud)
   .command(generate)

@@ -4,7 +4,7 @@ import list from './list/list-projects-command'
 import remove from './remove/remove-project-command'
 
 export default command('project')
-  .description('Manage my projects')
+  .description('Manage your projects')
   .command(create)
   .command(list)
   .command(remove)

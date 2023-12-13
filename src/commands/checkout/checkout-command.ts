@@ -46,6 +46,6 @@ export async function runCheckout({ skipCache, ...props }: Props) {
 
 export default command<Props>('checkout')
   .description('Checkout a project')
-  .option(input('projectId').description('Id of the project to checkout').string())
-  .option(input('skipCache').description('Disable cache. By default it is enabled'))
+  .option(input('projectId').description('Specify the ID of the project to checkout').string())
+  .option(input('skipCache').description('Disable cache (enabled by default)'))
   .handle(runCheckout)

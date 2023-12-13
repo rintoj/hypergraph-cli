@@ -131,18 +131,26 @@ async function run({ clean, environment, api, dbPort }: Props) {
 
 export default command<Props>('build')
   .description('Build a project')
-  .option(input('environment').description('Environment').string().required().prompt())
+  .option(
+    input('environment')
+      .description('Specify the project environment')
+      .string()
+      .required()
+      .prompt(),
+  )
   .option(
     input('api')
-      .description('List all the apis in the format "name:port" so as to expose to localhost')
+      .description('List all api services in the format "name:port" for local exposure')
       .string(),
   )
   .option(
-    input('dbPort').description('Will expose the database through a port, if defined').number(),
+    input('dbPort')
+      .description('Expose the database through a specified port, if defined')
+      .number(),
   )
   .option(
     input('clean').description(
-      'Do a clean build by removing previous environments, cache and config',
+      'Perform a clean build by removing previous environments, cache, and config',
     ),
   )
   .handle(run)
