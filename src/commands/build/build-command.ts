@@ -1,5 +1,7 @@
 import { command, input } from 'clifer'
-import { writeFile } from 'fs-extra'
+import { sync } from 'fast-glob'
+import { copyFile, ensureDir, remove, writeFile } from 'fs-extra'
+import { dirname, resolve } from 'path'
 import { readEnvironmentVariables } from '../../environment'
 import { withErrorHandler } from '../../util/error-handler'
 import { getProjectRoot } from '../../util/get-project-root'
@@ -95,6 +97,18 @@ async function setupCluster(env: any) {
   await runCommand(command)
 }
 
+async function copyPackages(projectRoot: string) {
+  const glob = `${projectRoot}/packages/*/package.json`
+  const buildDir = resolve(projectRoot, 'build')
+  await remove(buildDir)
+  const files = sync(glob)
+  for (const file of files) {
+    const targetFile = file.replace(projectRoot, buildDir)
+    await ensureDir(dirname(targetFile))
+    copyFile(file, targetFile)
+  }
+}
+
 async function run({ clean, environment, api, dbPort }: Props) {
   return withErrorHandler(async () => {
     const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
@@ -123,6 +137,7 @@ async function run({ clean, environment, api, dbPort }: Props) {
       api,
       dbPort,
     })
+    await copyPackages(projectRoot)
     await setupDocker(env.KUBE_CONTEXT)
     await setupCluster(env)
     await configureEnvironment(environmentFiles, clean)
