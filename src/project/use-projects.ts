@@ -40,6 +40,6 @@ export enum ProjectStatus {
   Published = 'Published',
 }
 
-export function useMyProjectsQuery(options?: QueryHookOptions<QueryType, void>) {
-  return useQuery<QueryType, void>(query, options)
+export function useMyProjectsQuery(options?: QueryHookOptions<QueryType, never>) {
+  return useQuery<QueryType, never>(query, options)
 }
