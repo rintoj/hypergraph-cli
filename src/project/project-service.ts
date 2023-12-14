@@ -57,8 +57,8 @@ export async function switchProject() {
 }
 
 export async function fetchProjects() {
-  const results = await useMyProjectsQuery({ pagination: { limit: 200 } })
-  return results.data.myProjects?.items ?? []
+  const results = await useMyProjectsQuery()
+  return results.data.myProjects ?? []
 }
 
 export async function resolveProject(props?: { projectId?: string }): Promise<Project> {

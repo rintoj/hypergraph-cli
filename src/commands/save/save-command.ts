@@ -36,7 +36,7 @@ export default command<Props>('save')
   .description('Save a source file to a given project')
   .argument(
     input('sourceFile')
-      .description('Source file(s) to upload. You may use glob patterns here')
+      .description('Source file(s) to upload. You may use glob patterns')
       .string()
       .required(),
   )

@@ -2,33 +2,16 @@ import gql from 'graphql-tag'
 import { QueryHookOptions, useQuery } from '../../../graphql'
 
 const query = gql`
-  query fetchMyProjects($pagination: PaginationInput) {
-    myProjects(pagination: $pagination) {
-      items {
-        id
-        name
-      }
+  query fetchMyProjects {
+    myProjects {
+      id
+      name
     }
   }
 `
 
-export interface RequestType {
-  pagination?: PaginationInputType | undefined
-}
-
-export interface PaginationInputType {
-  limit?: number
-  next?: string
-  __typename?: 'PaginationInput'
-}
-
 export interface QueryType {
-  myProjects?: ProjectsType
-}
-
-export interface ProjectsType {
-  items: ProjectType[]
-  __typename?: 'Projects'
+  myProjects: ProjectType[]
 }
 
 export interface ProjectType {
@@ -37,12 +20,6 @@ export interface ProjectType {
   __typename?: 'Project'
 }
 
-export function useMyProjectsQuery(
-  request: RequestType,
-  options?: QueryHookOptions<QueryType, RequestType>,
-) {
-  return useQuery<QueryType, RequestType>(query, {
-    variables: request,
-    ...options,
-  })
+export function useMyProjectsQuery(options?: QueryHookOptions<QueryType, never>) {
+  return useQuery<QueryType, never>(query, options)
 }
