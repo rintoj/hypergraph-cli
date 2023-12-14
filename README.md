@@ -251,6 +251,3 @@ Arguments:
 
 Options:
 - `--project-id=<string>`: Project ID in Hypergraph.
-```
-
-Feel free to copy and use this Markdown file as needed!
