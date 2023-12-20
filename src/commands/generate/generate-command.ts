@@ -1,7 +1,7 @@
 import { highlight } from 'cli-highlight'
 import { Spinner } from 'cli-spinner'
 import { command, input, prompt } from 'clifer'
-import { ensureDir } from 'fs-extra'
+import { ensureDir, readFile } from 'fs-extra'
 import { toDashedName } from 'name-util'
 import { ProjectContext } from '../../environment/read-environment'
 import { resolveProject } from '../../project/project-service'
@@ -15,6 +15,7 @@ import { basename } from 'path'
 
 interface Props {
   projectId?: string
+  file?: string
 }
 
 async function withSpinner<T>(callback: () => Promise<T>) {
@@ -95,9 +96,12 @@ async function runGenerate(props: Props) {
     const selectedProject = await resolveProject(props)
     const projectContext = await createContext(selectedProject as any)
     let response: { project?: ProjectType; history?: string } = {}
+    let initialPrompt = props.file ? await readFile(props.file, 'utf8') : undefined
     do {
       let { project } = response
-      const { ask } = await prompt(input('ask').prompt('Ask AI').string())
+      const { ask } = initialPrompt
+        ? { ask: initialPrompt }
+        : await prompt(input('ask').prompt('Ask AI').string())
       if (ask.trim() === '') {
         continue
       } else if (ask.trim().toLowerCase() === 'exit') {
@@ -112,6 +116,7 @@ async function runGenerate(props: Props) {
       }
       response = await generate(ask, response.history, projectContext)
       showProject(response.project)
+      initialPrompt = undefined
     } while (true)
   })
 }
@@ -119,4 +124,5 @@ async function runGenerate(props: Props) {
 export default command<Props>('generate')
   .description('Generate project models and resolvers using AI')
   .option(input('projectId').description('Specify the ID of the project').string())
+  .option(input('file').description('Load prompt from a file').string())
   .handle(runGenerate)
