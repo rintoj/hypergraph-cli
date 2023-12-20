@@ -1,5 +1,7 @@
 import { command, input } from 'clifer'
-import { writeFile } from 'fs-extra'
+import { sync } from 'fast-glob'
+import { copyFile, ensureDir, remove, writeFile } from 'fs-extra'
+import { dirname, resolve } from 'path'
 import { readEnvironmentVariables } from '../../environment'
 import { withErrorHandler } from '../../util/error-handler'
 import { getProjectRoot } from '../../util/get-project-root'
@@ -95,6 +97,22 @@ async function setupCluster(env: any) {
   await runCommand(command)
 }
 
+async function buildWorkspaces(projectRoot: string) {
+  const buildDir = resolve(projectRoot, 'build')
+  await remove(buildDir)
+  const packageJSON = await readPackageJSON(projectRoot)
+  const packages = packageJSON.workspaces?.packages ?? packageJSON?.workspaces ?? []
+  if (!packages?.length) return
+  const pattern = packages.length == 1 ? packages[0] : `{${packages.join(',')}}`
+  const glob = `${projectRoot}/${pattern}/package.json`
+  const files = sync(glob)
+  for (const file of files) {
+    const targetFile = file.replace(projectRoot, buildDir)
+    await ensureDir(dirname(targetFile))
+    copyFile(file, targetFile)
+  }
+}
+
 async function run({ clean, environment, api, dbPort }: Props) {
   return withErrorHandler(async () => {
     const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
@@ -123,6 +141,7 @@ async function run({ clean, environment, api, dbPort }: Props) {
       api,
       dbPort,
     })
+    await buildWorkspaces(projectRoot)
     await setupDocker(env.KUBE_CONTEXT)
     await setupCluster(env)
     await configureEnvironment(environmentFiles, clean)
