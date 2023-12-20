@@ -97,10 +97,14 @@ async function setupCluster(env: any) {
   await runCommand(command)
 }
 
-async function copyPackages(projectRoot: string) {
-  const glob = `${projectRoot}/packages/*/package.json`
+async function buildWorkspaces(projectRoot: string) {
   const buildDir = resolve(projectRoot, 'build')
   await remove(buildDir)
+  const packageJSON = await readPackageJSON(projectRoot)
+  const packages = packageJSON.workspaces?.packages ?? packageJSON?.workspaces ?? []
+  if (!packages?.length) return
+  const pattern = packages.length == 1 ? packages[0] : `{${packages.join(',')}}`
+  const glob = `${projectRoot}/${pattern}/package.json`
   const files = sync(glob)
   for (const file of files) {
     const targetFile = file.replace(projectRoot, buildDir)
@@ -137,7 +141,7 @@ async function run({ clean, environment, api, dbPort }: Props) {
       api,
       dbPort,
     })
-    await copyPackages(projectRoot)
+    await buildWorkspaces(projectRoot)
     await setupDocker(env.KUBE_CONTEXT)
     await setupCluster(env)
     await configureEnvironment(environmentFiles, clean)
