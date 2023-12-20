@@ -23,7 +23,7 @@ export interface RequestType {
 }
 
 export interface GenerateQueryInputType {
-  context?: string
+  history?: string
   projectId: string
   prompt: string
   __typename?: 'GenerateQueryInput'
