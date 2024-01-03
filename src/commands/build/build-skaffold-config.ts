@@ -28,20 +28,14 @@ function generateDockerConfig(
     image: `${projectName}-${serviceName}`,
     context: '.',
     docker: { dockerfile },
-    sync: {
-      infer: ['**/*.{js,ts,json}'],
-    },
+    sync: { infer: [infer] },
   }
 }
 
 function generateDockerConfigs(projectName: string, dockerConfigs: DockerConfig[]) {
   if (!dockerConfigs?.length) return {}
   const artifacts = dockerConfigs.map(config => generateDockerConfig(projectName, config))
-  return {
-    build: {
-      artifacts,
-    },
-  }
+  return { build: { artifacts } }
 }
 function generateManifests(manifests: string[]) {
   if (!manifests?.length) return {}

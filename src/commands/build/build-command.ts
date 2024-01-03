@@ -15,14 +15,8 @@ import { resolveFileByEnvironment } from '../../util/resolve-file-by-environment
 import { runCommand } from '../../util/run-command'
 import { buildSkaffoldConfig } from './build-skaffold-config'
 
-enum DeploymentType {
-  KUBERNETES = 'kubernetes',
-  CLOUD_FUNCTION = 'cloud-function',
-}
-
 interface Props {
   environment: string
-  type?: DeploymentType
   api?: string
   dbPort?: number
   clean?: boolean
@@ -37,7 +31,6 @@ async function generateSkaffoldConfig({
   namespace,
   api,
   dbPort,
-  type,
 }: {
   projectRoot: string
   projectName: string
@@ -46,7 +39,6 @@ async function generateSkaffoldConfig({
   namespace: string
   api?: string
   dbPort?: number
-  type?: DeploymentType
 }) {
   const dockerFiles = resolveFileByEnvironment(
     listFiles(projectRoot, 'services', '*', 'Docker*'),
@@ -80,10 +72,9 @@ async function generateSkaffoldConfig({
       serviceName: serviceNameFromPath(dockerfile),
       dockerfile: toRelativePathFromProjectRoot(dockerfile, projectRoot),
     })),
-    manifests:
-      type === DeploymentType.KUBERNETES
-        ? deployments.map(deployment => toRelativePathFromProjectRoot(deployment, projectRoot))
-        : [],
+    manifests: deployments.map(deployment =>
+      toRelativePathFromProjectRoot(deployment, projectRoot),
+    ),
     exposeServices,
   })
   await writeFile(`${projectRoot}/${SKAFFOLD_FILE}`, skaffoldConfig)
@@ -122,7 +113,7 @@ async function buildWorkspaces(projectRoot: string) {
   }
 }
 
-async function run({ type = DeploymentType.KUBERNETES, clean, environment, api, dbPort }: Props) {
+async function run({ clean, environment, api, dbPort }: Props) {
   return withErrorHandler(async () => {
     const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
     const packageJSON = await readPackageJSON(projectRoot)
@@ -149,14 +140,11 @@ async function run({ type = DeploymentType.KUBERNETES, clean, environment, api, 
       namespace,
       api,
       dbPort,
-      type,
     })
     await buildWorkspaces(projectRoot)
-    if (type === DeploymentType.KUBERNETES) {
-      await setupDocker(env.KUBE_CONTEXT)
-      await setupCluster(env)
-      await configureEnvironment(environmentFiles, clean)
-    }
+    await setupDocker(env.KUBE_CONTEXT)
+    await setupCluster(env)
+    await configureEnvironment(environmentFiles, clean)
   })
 }
 
@@ -168,12 +156,6 @@ export default command<Props>('build')
       .string()
       .required()
       .prompt(),
-  )
-  .option(
-    input('type')
-      .description('Deployment type')
-      .string()
-      .choices([DeploymentType.KUBERNETES, DeploymentType.CLOUD_FUNCTION]),
   )
   .option(
     input('api')
