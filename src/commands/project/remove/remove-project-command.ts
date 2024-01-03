@@ -6,6 +6,7 @@ import chalk from 'chalk'
 
 interface Props {
   projectId?: string
+  skipConfirm?: boolean
 }
 
 async function removeProject(props: Props) {
@@ -16,13 +17,15 @@ async function removeProject(props: Props) {
         '\nNote: Deleting this project is a permanent action. All data, files, and configurations \nassociated with the project will be irretrievably lost!\n',
       ),
     )
-    const { projectId } = await prompt(
-      input('projectId')
-        .string()
-        .prompt(`Type "${chalk.yellow(selectedProject.id)}" to confirm.`),
-    )
-    if (projectId !== selectedProject.id) {
-      throw new Error('Your input does not match the id of the project to be removed. Try again!')
+    if (!props.skipConfirm) {
+      const { projectId } = await prompt(
+        input('projectId')
+          .string()
+          .prompt(`Type "${chalk.yellow(selectedProject.id)}" to confirm.`),
+      )
+      if (projectId !== selectedProject.id) {
+        throw new Error('Your input does not match the id of the project to be removed. Try again!')
+      }
     }
     await useRemoveProjectMutation({ variables: { projectId: selectedProject.id } })
     console.log(
@@ -34,4 +37,5 @@ async function removeProject(props: Props) {
 export default command<Props>('remove')
   .description('Remove a project')
   .option(input('projectId').description('Id of the project to be removed').string())
+  .option(input('skipConfirm').description('Skip asking for a confirmation'))
   .handle(removeProject)
