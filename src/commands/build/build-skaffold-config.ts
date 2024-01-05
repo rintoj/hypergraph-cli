@@ -1,4 +1,5 @@
 import jsYaml from 'js-yaml'
+import { DeploymentType } from '../deploy'
 
 interface DockerConfig {
   serviceName: string
@@ -18,6 +19,7 @@ interface Config {
   dockerConfigs: DockerConfig[]
   manifests: string[]
   exposeServices?: ExposeConfig[]
+  deployment: DeploymentType
 }
 
 function generateDockerConfig(
@@ -37,26 +39,50 @@ function generateDockerConfigs(projectName: string, dockerConfigs: DockerConfig[
   const artifacts = dockerConfigs.map(config => generateDockerConfig(projectName, config))
   return { build: { artifacts } }
 }
-function generateManifests(manifests: string[]) {
+
+function generateManifests({
+  projectName,
+  manifests,
+  dockerConfigs,
+  deployment,
+}: {
+  projectName: string
+  manifests: string[]
+  dockerConfigs: DockerConfig[]
+  deployment: DeploymentType
+}) {
   if (!manifests?.length) return {}
-  return { deploy: { kubectl: { manifests } } }
+  if (deployment === DeploymentType.KUBERNETES) {
+    return { deploy: { kubectl: { manifests } } }
+  }
+  if (deployment === DeploymentType.CLOUD_FUNCTIONS) {
+    const images = dockerConfigs.map(config => `${projectName}-${config.serviceName}`)
+    return { deploy: { docker: { images } } }
+  }
 }
 
 function generatePortForwardConfig({
+  projectName,
   namespace,
   exposeServices,
+  deployment,
 }: {
+  projectName: string
   namespace: string
   exposeServices?: ExposeConfig[]
+  deployment: DeploymentType
 }) {
   if (!exposeServices?.length) return {}
   return {
     portForward: exposeServices
       ?.filter(expose => !!expose)
       .map(expose => ({
-        resourceName: expose.serviceName,
-        resourceType: 'Service',
-        namespace,
+        resourceName:
+          deployment === DeploymentType.CLOUD_FUNCTIONS
+            ? `${projectName}-${expose.serviceName}`
+            : expose.serviceName,
+        resourceType: deployment === DeploymentType.CLOUD_FUNCTIONS ? 'container' : 'Service',
+        namespace: deployment === DeploymentType.CLOUD_FUNCTIONS ? undefined : namespace,
         port: expose.port ?? 80,
         address: '0.0.0.0',
         localPort: expose.targetPort,
@@ -70,13 +96,14 @@ export function buildSkaffoldConfig({
   dockerConfigs,
   manifests,
   exposeServices,
+  deployment,
 }: Config) {
   return jsYaml.dump({
-    apiVersion: 'skaffold/v2beta24',
+    apiVersion: 'skaffold/v4beta8',
     kind: 'Config',
     metadata: { name: projectName },
     ...generateDockerConfigs(projectName, dockerConfigs),
-    ...generateManifests(manifests),
-    ...generatePortForwardConfig({ namespace, exposeServices }),
+    ...generateManifests({ projectName, manifests, dockerConfigs, deployment }),
+    ...generatePortForwardConfig({ projectName, namespace, exposeServices, deployment }),
   })
 }
