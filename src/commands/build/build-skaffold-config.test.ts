@@ -11,7 +11,7 @@ describe('build-skaffold-config', () => {
       exposeServices: [{ serviceName: 'api', targetPort: 4001 }],
       deployment: DeploymentType.KUBERNETES,
     })
-    expect(output).toEqual(`apiVersion: skaffold/v4beta8
+    expect(output).toEqual(`apiVersion: skaffold/v2beta24
 kind: Config
 metadata:
   name: todo
@@ -48,7 +48,7 @@ portForward:
       exposeServices: [{ serviceName: 'api', targetPort: 4001 }],
       deployment: DeploymentType.CLOUD_FUNCTIONS,
     })
-    expect(output).toEqual(`apiVersion: skaffold/v4beta8
+    expect(output).toEqual(`apiVersion: skaffold/v2beta24
 kind: Config
 metadata:
   name: todo

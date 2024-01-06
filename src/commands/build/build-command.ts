@@ -57,8 +57,12 @@ async function generateSkaffoldConfig({
   const exposeServices = api
     ?.split(',')
     .map(service => {
-      const [serviceName, targetPort = '4000'] = service.split(':')
-      return { serviceName, port: 5000, targetPort: parseInt(targetPort, undefined) }
+      const [serviceName, port = '4000', targetPort = '4000'] = service.split(':')
+      return {
+        serviceName,
+        port: parseInt(port),
+        targetPort: parseInt(targetPort ?? port, undefined),
+      }
     })
     .concat([
       dbPort !== undefined && hasPostgres
@@ -86,19 +90,18 @@ async function generateSkaffoldConfig({
 }
 
 function setupKubeContext(kubeContext: string, deployment: DeploymentType) {
+  if (deployment !== DeploymentType.KUBERNETES) return
   if (!kubeContext) {
-    if (deployment === DeploymentType.KUBERNETES) {
-      throw new Error('Missing KUBE_CONTEXT in the environment')
-    }
-    return
+    throw new Error('Missing KUBE_CONTEXT in the environment')
   }
   return runCommand(`kubectl config use-context ${kubeContext}`)
 }
 
 async function configureEnvironment(environmentFiles: string[], clean: boolean = false) {
-  if (!environmentFiles?.length) return
-  if (clean) await runCommand(`kubectl delete -f ${environmentFiles.join(' ')}`)
-  return runCommand(`kubectl apply -f ${environmentFiles.join(' ')}`)
+  const envFiles = environmentFiles.filter(f => /\.ya?ml/.test(f))
+  if (!envFiles?.length) return
+  if (clean) await runCommand(`kubectl delete -f ${envFiles.join(' ')}`)
+  return runCommand(`kubectl apply -f ${envFiles.join(' ')}`)
 }
 
 async function setupCluster(env: any, deployment: DeploymentType) {
@@ -145,7 +148,7 @@ async function run({
   `)
     const namespace = `${projectName}-${environment}`
     const environmentFiles = resolveFileByEnvironment(
-      listFiles(projectRoot, 'env*.{yaml,yml}'),
+      listFiles(projectRoot, '{.env*,env*.yaml,env*.yml}'),
       environment,
     )
     const env = await readEnvironmentVariables(environmentFiles)

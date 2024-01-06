@@ -12,7 +12,7 @@ function fileNameWithoutEnvExt(fileName: string) {
 
 function hasEnvironmentExt(fileName: string) {
   const parts = fileName.split('.')
-  return parts.length > 2
+  return parts.length >= 2
 }
 
 export function resolveFileByEnvironment(files: string[], environment: string) {
@@ -20,7 +20,7 @@ export function resolveFileByEnvironment(files: string[], environment: string) {
   return files.filter(file => {
     const [name, ext] = toNameAndExtension(file)
     const environmentFile = [fileNameWithoutEnvExt(name), environment, ext].join('.')
-    if (!file.includes(`.${environment}.`)) {
+    if (!new RegExp(`.${environment}(\.|$)`).test(file)) {
       if (hasEnvironmentExt(file)) return false
       return !fileByKey[environmentFile]
     }

@@ -77,10 +77,7 @@ function generatePortForwardConfig({
     portForward: exposeServices
       ?.filter(expose => !!expose)
       .map(expose => ({
-        resourceName:
-          deployment === DeploymentType.CLOUD_FUNCTIONS
-            ? `${projectName}-${expose.serviceName}`
-            : expose.serviceName,
+        resourceName: `${projectName}-${expose.serviceName}`,
         resourceType: deployment === DeploymentType.CLOUD_FUNCTIONS ? 'container' : 'Service',
         namespace: deployment === DeploymentType.CLOUD_FUNCTIONS ? undefined : namespace,
         port: expose.port ?? 80,
@@ -99,7 +96,7 @@ export function buildSkaffoldConfig({
   deployment,
 }: Config) {
   return jsYaml.dump({
-    apiVersion: 'skaffold/v4beta8',
+    apiVersion: 'skaffold/v2beta24',
     kind: 'Config',
     metadata: { name: projectName },
     ...generateDockerConfigs(projectName, dockerConfigs),
