@@ -1,6 +1,6 @@
 import { command, input } from 'clifer'
 import { sync } from 'fast-glob'
-import { copyFile, ensureDir, remove, writeFile } from 'fs-extra'
+import { copyFile, ensureDir, readFile, remove, writeFile } from 'fs-extra'
 import { dirname, resolve } from 'path'
 import { readEnvironmentVariables } from '../../environment'
 import { withErrorHandler } from '../../util/error-handler'
@@ -149,7 +149,10 @@ async function buildWorkspaces(projectRoot: string) {
   for (const file of files) {
     const targetFile = file.replace(projectRoot, buildDir)
     await ensureDir(dirname(targetFile))
-    copyFile(file, targetFile)
+    const content = await readFile(file, 'utf8')
+    const packageJSON = JSON.parse(content)
+    packageJSON.main = packageJSON.main?.replace(/.ts/, '.js') ?? 'src/index.js'
+    await writeFile(targetFile, JSON.stringify(packageJSON, null, 2), 'utf8')
   }
 }
 
