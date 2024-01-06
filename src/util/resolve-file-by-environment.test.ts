@@ -23,6 +23,14 @@ describe('resolveFileByEnvironment', () => {
     expect(files).toEqual(['/build/test.dev.json', '/build/sample.json'])
   })
 
+  test.only('should return an env specific file only even if files for other envs exist', () => {
+    const files = resolveFileByEnvironment(
+      ['/build/test.dev', '/build/test.prod', '/build/test.local'],
+      'dev',
+    )
+    expect(files).toEqual(['/build/test.dev'])
+  })
+
   test('should return an generic file if no environment specific file exists', () => {
     const files = resolveFileByEnvironment(
       ['/build/sample.json', '/build/test.json', '/build/test.prod.json', '/build/test.local.json'],

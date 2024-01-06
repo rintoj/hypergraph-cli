@@ -5,7 +5,7 @@ import { readEnvironment } from '../environment/read-environment'
 import { ProjectType } from '../commands/checkout/use-checkout-query.gql'
 import { useMyProjectsQuery } from './use-projects'
 
-type Project = Pick<ProjectType, 'id' | 'name'>
+export type Project = Pick<ProjectType, 'id' | 'name'>
 
 export function formatProject(project: Project | undefined, color = false) {
   if (!project) return color ? chalk.red('None') : 'None'

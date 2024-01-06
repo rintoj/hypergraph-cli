@@ -1,6 +1,6 @@
 import { command, input } from 'clifer'
 import { sync } from 'fast-glob'
-import { copyFile, ensureDir, remove, writeFile } from 'fs-extra'
+import { copyFile, ensureDir, readFile, remove, writeFile } from 'fs-extra'
 import { dirname, resolve } from 'path'
 import { readEnvironmentVariables } from '../../environment'
 import { withErrorHandler } from '../../util/error-handler'
@@ -13,12 +13,14 @@ import {
 } from '../../util/project-util'
 import { resolveFileByEnvironment } from '../../util/resolve-file-by-environment'
 import { runCommand } from '../../util/run-command'
+import { DeploymentType } from '../deploy'
 import { buildSkaffoldConfig } from './build-skaffold-config'
 
 interface Props {
   environment: string
   api?: string
   dbPort?: number
+  deployment?: DeploymentType
   clean?: boolean
 }
 const SKAFFOLD_FILE = 'skaffold.yaml'
@@ -31,6 +33,7 @@ async function generateSkaffoldConfig({
   namespace,
   api,
   dbPort,
+  deployment,
 }: {
   projectRoot: string
   projectName: string
@@ -39,6 +42,7 @@ async function generateSkaffoldConfig({
   namespace: string
   api?: string
   dbPort?: number
+  deployment: DeploymentType
 }) {
   const dockerFiles = resolveFileByEnvironment(
     listFiles(projectRoot, 'services', '*', 'Docker*'),
@@ -53,8 +57,12 @@ async function generateSkaffoldConfig({
   const exposeServices = api
     ?.split(',')
     .map(service => {
-      const [serviceName, targetPort = '4000'] = service.split(':')
-      return { serviceName, port: 80, targetPort: parseInt(targetPort, undefined) }
+      const [serviceName, port = '4000', targetPort = '4000'] = service.split(':')
+      return {
+        serviceName,
+        port: parseInt(port),
+        targetPort: parseInt(targetPort ?? port, undefined),
+      }
     })
     .concat([
       dbPort !== undefined && hasPostgres
@@ -68,6 +76,7 @@ async function generateSkaffoldConfig({
   const skaffoldConfig = buildSkaffoldConfig({
     projectName,
     namespace,
+    deployment,
     dockerConfigs: dockerFiles.map(dockerfile => ({
       serviceName: serviceNameFromPath(dockerfile),
       dockerfile: toRelativePathFromProjectRoot(dockerfile, projectRoot),
@@ -80,18 +89,49 @@ async function generateSkaffoldConfig({
   await writeFile(`${projectRoot}/${SKAFFOLD_FILE}`, skaffoldConfig)
 }
 
-function setupDocker(kubeContext: string) {
-  if (!kubeContext) return
-  return runCommand(`kubectl config use-context ${kubeContext}`)
+async function hasKubeControl() {
+  const [output] = await runCommand('which kubectl', { silent: true })
+  return output != ''
+}
+
+async function findAllKubeContexts() {
+  return await runCommand(`kubectl config get-contexts --output=name`, {
+    silent: true,
+  })
+}
+
+async function setupKubeContext(kubeContext: string, deployment: DeploymentType) {
+  if (deployment !== DeploymentType.KUBERNETES) {
+    if (!(await hasKubeControl())) return
+    const allContexts = await findAllKubeContexts()
+    const randomContext = allContexts.find(context => context !== 'minikube')
+    if (!randomContext) return
+    return runCommand(`kubectl config use-context ${randomContext}`)
+  }
+  if (!kubeContext) {
+    return console.warn(
+      'Target context is not configured. Please set up the desired Kubernetes context using the environment variable KUBE_CONTEXT.',
+    )
+  }
+  const allContexts = await findAllKubeContexts()
+  const targetContext = allContexts.find(context => context === kubeContext)
+  if (!targetContext) {
+    throw new Error(
+      `Target context "${kubeContext}" is not configured. Please set up the desired Kubernetes context using the environment variable KUBE_CONTEXT.`,
+    )
+  }
+  return runCommand(`kubectl config use-context ${targetContext}`)
 }
 
 async function configureEnvironment(environmentFiles: string[], clean: boolean = false) {
-  if (!environmentFiles?.length) return
-  if (clean) await runCommand(`kubectl delete -f ${environmentFiles.join(' ')}`)
-  return runCommand(`kubectl apply -f ${environmentFiles.join(' ')}`)
+  const envFiles = environmentFiles.filter(f => /\.ya?ml/.test(f))
+  if (!envFiles?.length) return
+  if (clean) await runCommand(`kubectl delete -f ${envFiles.join(' ')}`)
+  return runCommand(`kubectl apply -f ${envFiles.join(' ')}`)
 }
 
-async function setupCluster(env: any) {
+async function setupCluster(env: any, deployment: DeploymentType) {
+  if (deployment !== DeploymentType.KUBERNETES) return
   if (env.CLOUD !== 'gcloud') return
   const command = `gcloud container clusters get-credentials ${env.CLUSTER} --region ${env.REGION} --project ${env.PROJECT_ID}`
   await runCommand(command)
@@ -109,11 +149,20 @@ async function buildWorkspaces(projectRoot: string) {
   for (const file of files) {
     const targetFile = file.replace(projectRoot, buildDir)
     await ensureDir(dirname(targetFile))
-    copyFile(file, targetFile)
+    const content = await readFile(file, 'utf8')
+    const packageJSON = JSON.parse(content)
+    packageJSON.main = packageJSON.main?.replace(/.ts/, '.js') ?? 'src/index.js'
+    await writeFile(targetFile, JSON.stringify(packageJSON, null, 2), 'utf8')
   }
 }
 
-async function run({ clean, environment, api, dbPort }: Props) {
+async function run({
+  clean,
+  environment,
+  api,
+  dbPort,
+  deployment = DeploymentType.CLOUD_FUNCTIONS,
+}: Props) {
   return withErrorHandler(async () => {
     const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
     const packageJSON = await readPackageJSON(projectRoot)
@@ -128,7 +177,7 @@ async function run({ clean, environment, api, dbPort }: Props) {
   `)
     const namespace = `${projectName}-${environment}`
     const environmentFiles = resolveFileByEnvironment(
-      listFiles(projectRoot, 'env*.{yaml,yml}'),
+      listFiles(projectRoot, '{.env*,env*.yaml,env*.yml}'),
       environment,
     )
     const env = await readEnvironmentVariables(environmentFiles)
@@ -140,10 +189,11 @@ async function run({ clean, environment, api, dbPort }: Props) {
       namespace,
       api,
       dbPort,
+      deployment,
     })
     await buildWorkspaces(projectRoot)
-    await setupDocker(env.KUBE_CONTEXT)
-    await setupCluster(env)
+    await setupKubeContext(env.KUBE_CONTEXT, deployment)
+    await setupCluster(env, deployment)
     await configureEnvironment(environmentFiles, clean)
   })
 }
@@ -161,6 +211,12 @@ export default command<Props>('build')
     input('api')
       .description('List all api services in the format "name:port" for local exposure')
       .string(),
+  )
+  .option(
+    input('deployment')
+      .description('Define type of deployment to be "kubernetes" or "cloud-functions" (default)')
+      .string()
+      .choices([DeploymentType.CLOUD_FUNCTIONS, DeploymentType.KUBERNETES]),
   )
   .option(
     input('dbPort')
