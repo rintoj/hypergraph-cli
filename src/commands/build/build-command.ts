@@ -89,12 +89,38 @@ async function generateSkaffoldConfig({
   await writeFile(`${projectRoot}/${SKAFFOLD_FILE}`, skaffoldConfig)
 }
 
-function setupKubeContext(kubeContext: string, deployment: DeploymentType) {
-  if (deployment !== DeploymentType.KUBERNETES) return
-  if (!kubeContext) {
-    throw new Error('Missing KUBE_CONTEXT in the environment')
+async function hasKubeControl() {
+  const [output] = await runCommand('which kubectl', { silent: true })
+  return output != ''
+}
+
+async function findAllKubeContexts() {
+  return await runCommand(`kubectl config get-contexts --output=name`, {
+    silent: true,
+  })
+}
+
+async function setupKubeContext(kubeContext: string, deployment: DeploymentType) {
+  if (deployment !== DeploymentType.KUBERNETES) {
+    if (!(await hasKubeControl())) return
+    const allContexts = await findAllKubeContexts()
+    const randomContext = allContexts.find(context => context !== 'minikube')
+    if (!randomContext) return
+    return runCommand(`kubectl config use-context ${randomContext}`)
   }
-  return runCommand(`kubectl config use-context ${kubeContext}`)
+  if (!kubeContext) {
+    return console.warn(
+      'Target context is not configured. Please set up the desired Kubernetes context using the environment variable KUBE_CONTEXT.',
+    )
+  }
+  const allContexts = await findAllKubeContexts()
+  const targetContext = allContexts.find(context => context === kubeContext)
+  if (!targetContext) {
+    throw new Error(
+      `Target context "${kubeContext}" is not configured. Please set up the desired Kubernetes context using the environment variable KUBE_CONTEXT.`,
+    )
+  }
+  return runCommand(`kubectl config use-context ${targetContext}`)
 }
 
 async function configureEnvironment(environmentFiles: string[], clean: boolean = false) {
