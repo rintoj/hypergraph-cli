@@ -28,7 +28,7 @@ export function saveSourceFiles(props: Props) {
         input: { projectId: project.id, sourceFiles },
       },
     })
-    await runCheckout({...props, projectId: project.id })
+    await runCheckout({ ...props, projectId: project.id })
   })
 }
 
