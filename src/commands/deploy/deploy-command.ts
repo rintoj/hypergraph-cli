@@ -5,11 +5,13 @@ import { getProjectRoot } from '../../util/get-project-root'
 import { listFiles, readPackageJSON } from '../../util/project-util'
 import { resolveFileByEnvironment } from '../../util/resolve-file-by-environment'
 import { runCommand } from '../../util/run-command'
+import { DeploymentType } from './deployment-type'
 
 interface Props {
   environment: string
   create?: boolean
   clean?: boolean
+  deployment?: DeploymentType
 }
 
 async function checkIfClusterExists(env: any) {
@@ -81,8 +83,16 @@ async function checkIfAuthenticated() {
   }
 }
 
-async function run({ create, clean, environment }: Props) {
+async function run({
+  create,
+  clean,
+  environment,
+  deployment = DeploymentType.CLOUD_FUNCTIONS,
+}: Props) {
   return withErrorHandler(async () => {
+    if (deployment === DeploymentType.CLOUD_FUNCTIONS) {
+      throw new Error(`This deployment type is not supported just yet: ${deployment} `)
+    }
     const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
     const packageJSON = await readPackageJSON(projectRoot)
     const projectName = packageJSON?.hypergraph?.projectName
@@ -112,7 +122,11 @@ async function run({ create, clean, environment }: Props) {
         throw new Error(`Missing container registry : ${env.CONTAINER_REGISTRY}`)
       }
     }
-    await runCommand(`hypergraph build --environment=${environment} ${clean ? '--clean' : ''}`)
+    await runCommand(
+      `hypergraph build --environment=${environment} --deployment=${deployment} ${
+        clean ? '--clean' : ''
+      }`,
+    )
     await runCommand(
       `skaffold run --namespace=${projectName}-${environment} --default-repo=${env.CONTAINER_REGISTRY} --status-check=false`,
     )
@@ -127,6 +141,12 @@ export default command<Props>('deploy')
       .string()
       .required()
       .prompt(),
+  )
+  .option(
+    input('deployment')
+      .description('Define type of deployment to be "kubernetes" or "cloud-functions" (default)')
+      .string()
+      .choices([DeploymentType.CLOUD_FUNCTIONS, DeploymentType.KUBERNETES]),
   )
   .option(
     input('create').description(
