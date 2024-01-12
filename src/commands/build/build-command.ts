@@ -1,10 +1,10 @@
 import { command, input } from 'clifer'
 import { sync } from 'fast-glob'
-import { copyFile, ensureDir, readFile, remove, writeFile } from 'fs-extra'
+import { ensureDir, readFile, remove, writeFile } from 'fs-extra'
 import { dirname, resolve } from 'path'
 import { readEnvironmentVariables } from '../../environment'
 import { withErrorHandler } from '../../util/error-handler'
-import { getProjectRoot } from '../../util/get-project-root'
+import { getBackendProjectRoot } from '../../util/get-project-root'
 import {
   listFiles,
   readPackageJSON,
@@ -164,7 +164,7 @@ async function run({
   deployment = DeploymentType.CLOUD_FUNCTIONS,
 }: Props) {
   return withErrorHandler(async () => {
-    const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
+    const projectRoot = await getBackendProjectRoot()
     const packageJSON = await readPackageJSON(projectRoot)
     const projectName = packageJSON?.hypergraph?.projectName
     if (!projectName)
