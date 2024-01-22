@@ -33,5 +33,5 @@ export function saveConfig(changedConfig: Config) {
 }
 
 export function resolveServiceUrl() {
-  return process.env.HYPERGRAPH_SERVICE_URL ?? config.remote ?? defaultConfig.remote
+  return process.env.HYPERGRAPH_SERVICE_URL ?? config.remote + '/graphql' ?? defaultConfig.remote
 }
