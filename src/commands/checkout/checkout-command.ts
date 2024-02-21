@@ -32,6 +32,11 @@ async function ensureProjectDir({ projectRoot }: Pick<ProjectContext, 'projectRo
   await runCommand('git init', { cwd: projectRoot, silent: true })
 }
 
+async function commit({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
+  await runCommand('git add --all', { cwd: projectRoot, silent: true })
+  await runCommand('git commit -m "Initial commit"', { cwd: projectRoot, silent: true })
+}
+
 export async function runCheckout({ open, skipCache, ...props }: Props) {
   return withErrorHandler(async () => {
     const selectedProject = await resolveProject(props)
@@ -42,6 +47,7 @@ export async function runCheckout({ open, skipCache, ...props }: Props) {
     await ensureProjectDir(context)
     await writeSourceFiles(context.projectRoot, project.sourceFiles)
     saveCache(context.projectRoot, { checkoutToken: checkoutResponse.data.checkout.next })
+    await commit(context)
     if (open) {
       runCommand(`open ${context.projectRoot}/${toDashedName(project.name ?? '')}.code-workspace`)
     }
