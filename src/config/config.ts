@@ -7,7 +7,7 @@ interface Config {
 }
 
 const defaultConfig: Config = {
-  remote: 'http://local.hypergraph.in/graphql',
+  remote: 'https://hypergraph.in',
 }
 
 const configPath = `${process.env.HOME}/.hypergraph`
