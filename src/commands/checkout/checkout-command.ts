@@ -7,7 +7,7 @@ import { ProjectContext } from '../../environment/read-environment'
 import { resolveProject } from '../../project/project-service'
 import { withErrorHandler } from '../../util/error-handler'
 import { getProjectRoot } from '../../util/get-project-root'
-import { runCommand } from '../../util/run-command'
+import { ifValidCommand, runCommand } from '../../util/run-command'
 import { writeSourceFiles } from '../../util/source-file-util'
 import { ProjectType, useCheckoutQuery } from './use-checkout-query.gql'
 
@@ -38,6 +38,30 @@ async function commit({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
   await runCommand('git commit -m "Initial commit"', { cwd: projectRoot, silent: true })
 }
 
+async function saveAllHypergraphFiles({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
+  try {
+    await runCommand(`hypergraph save '**/*.hg.ts'`, {
+      cwd: path.resolve(projectRoot, 'backend'),
+      silent: false,
+    })
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function installDependencies({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
+  try {
+    const installer = (await ifValidCommand('yarn')) ?? (await ifValidCommand('npm'))
+    if (!installer) return
+    await runCommand(`${installer} install`, {
+      cwd: path.resolve(projectRoot, 'backend'),
+      silent: false,
+    })
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 export async function runCheckout({ open, skipCache, ...props }: Props) {
   return withErrorHandler(async () => {
     const selectedProject = await resolveProject(props)
@@ -49,7 +73,11 @@ export async function runCheckout({ open, skipCache, ...props }: Props) {
     if (isFirstRun) await ensureProjectDir(context)
     await writeSourceFiles(context.projectRoot, project.sourceFiles)
     saveCache(context.projectRoot, { checkoutToken: checkoutResponse.data.checkout.next })
-    if (isFirstRun) await commit(context)
+    if (isFirstRun) {
+      await saveAllHypergraphFiles(context)
+      await installDependencies(context)
+      await commit(context)
+    }
     if (open) {
       runCommand(`open ${context.projectRoot}/${toDashedName(project.name ?? '')}.code-workspace`)
     }
