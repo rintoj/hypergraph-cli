@@ -95,7 +95,7 @@ async function runGenerate(props: Props) {
   return withErrorHandler(async () => {
     const selectedProject = await resolveProject(props)
     const projectContext = await createContext(selectedProject as any)
-    let response: { project?: ProjectType; history?: string } = {}
+    let response: { project?: ProjectType; response?: string } = {}
     let initialPrompt = props.file ? await readFile(props.file, 'utf8') : undefined
     do {
       let { project } = response
@@ -114,7 +114,7 @@ async function runGenerate(props: Props) {
         }
         continue
       }
-      response = await generate(ask, response.history, projectContext)
+      response = await generate(ask, response.response, projectContext)
       showProject(response.project)
       initialPrompt = undefined
     } while (true)
