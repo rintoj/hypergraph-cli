@@ -23,11 +23,21 @@ export function saveSourceFiles(props: Props) {
         content: await readFile(file, 'utf-8'),
       })),
     )
-    await useSaveSourceFilesMutation({
-      variables: {
-        input: { projectId: project.id, sourceFiles },
-      },
-    })
+
+    try {
+      await useSaveSourceFilesMutation({
+        variables: {
+          input: { projectId: project.id, sourceFiles },
+        },
+      })
+    } catch (e) {
+      // TODO: fix the failure on the first run
+      await useSaveSourceFilesMutation({
+        variables: {
+          input: { projectId: project.id, sourceFiles },
+        },
+      })
+    }
     await runCheckout({ ...props, projectId: project.id })
   })
 }
