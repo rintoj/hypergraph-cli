@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import { command, input } from 'clifer'
+import { command } from 'clifer'
 import { exit } from 'process'
 import { readConfig, saveConfig } from '../../../config/config'
 import { AuthProvider, authorize } from '../auth-service'
@@ -9,7 +9,7 @@ interface Props {
   provider: AuthProvider
 }
 
-async function run({ provider }: Props) {
+async function run({ provider = AuthProvider.Github }: Props) {
   try {
     const { remote } = readConfig()
     const code = await authorize(remote ?? 'http:/localhost:4000', provider)
@@ -28,12 +28,12 @@ async function run({ provider }: Props) {
 
 export default command<Props>('login')
   .description('Access your Hypergraph account by logging in')
-  .option(
-    input('provider')
-      .description('Authenticate using Google or Github credentials.')
-      .string()
-      .prompt('How would you like to login?')
-      .choices([AuthProvider.Google, AuthProvider.Github])
-      .prompt(),
-  )
+  // .option(
+  //   input('provider')
+  //     .description('Authenticate using Google or Github credentials.')
+  //     .string()
+  //     .prompt('How would you like to login?')
+  //     .choices([AuthProvider.Google, AuthProvider.Github])
+  //     .prompt(),
+  // )
   .handle(run)
