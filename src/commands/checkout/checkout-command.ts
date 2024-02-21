@@ -1,6 +1,7 @@
 import { command, input } from 'clifer'
-import { ensureDir } from 'fs-extra'
+import { ensureDir, existsSync } from 'fs-extra'
 import { toDashedName } from 'name-util'
+import path from 'path'
 import { readCache, saveCache } from '../../cache/cache'
 import { ProjectContext } from '../../environment/read-environment'
 import { resolveProject } from '../../project/project-service'
@@ -44,10 +45,11 @@ export async function runCheckout({ open, skipCache, ...props }: Props) {
     const next = skipCache ? undefined : readCache(context.projectRoot)?.checkoutToken
     const checkoutResponse = await useCheckoutQuery({ projectId: selectedProject.id, next })
     const project = checkoutResponse.data.checkout.project
-    await ensureProjectDir(context)
+    const isFirstRun = !existsSync(path.resolve(context.projectRoot, '.git'))
+    if (isFirstRun) await ensureProjectDir(context)
     await writeSourceFiles(context.projectRoot, project.sourceFiles)
     saveCache(context.projectRoot, { checkoutToken: checkoutResponse.data.checkout.next })
-    await commit(context)
+    if (isFirstRun) await commit(context)
     if (open) {
       runCommand(`open ${context.projectRoot}/${toDashedName(project.name ?? '')}.code-workspace`)
     }
