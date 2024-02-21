@@ -19,6 +19,17 @@ function showCommand(command: string) {
   )
 }
 
+export async function isValidCommand(command: string) {
+  const [response] = await runCommand(`which ${command}`, { silent: true })
+  if (response.includes('not found')) return false
+  return true
+}
+
+export async function ifValidCommand(command: string) {
+  if (!(await isValidCommand(command))) return
+  return command
+}
+
 export function runCommand(
   command: string,
   { fatal = true, silent = false, cwd = process.cwd() }: Options = {},

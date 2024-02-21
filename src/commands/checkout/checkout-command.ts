@@ -1,12 +1,13 @@
 import { command, input } from 'clifer'
-import { ensureDir } from 'fs-extra'
+import { ensureDir, existsSync } from 'fs-extra'
 import { toDashedName } from 'name-util'
+import path from 'path'
 import { readCache, saveCache } from '../../cache/cache'
 import { ProjectContext } from '../../environment/read-environment'
 import { resolveProject } from '../../project/project-service'
 import { withErrorHandler } from '../../util/error-handler'
 import { getProjectRoot } from '../../util/get-project-root'
-import { runCommand } from '../../util/run-command'
+import { ifValidCommand, runCommand } from '../../util/run-command'
 import { writeSourceFiles } from '../../util/source-file-util'
 import { ProjectType, useCheckoutQuery } from './use-checkout-query.gql'
 
@@ -32,6 +33,35 @@ async function ensureProjectDir({ projectRoot }: Pick<ProjectContext, 'projectRo
   await runCommand('git init', { cwd: projectRoot, silent: true })
 }
 
+async function commit({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
+  await runCommand('git add --all', { cwd: projectRoot, silent: true })
+  await runCommand('git commit -m "Initial commit"', { cwd: projectRoot, silent: true })
+}
+
+async function saveAllHypergraphFiles({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
+  try {
+    await runCommand(`hypergraph save '**/*.hg.ts'`, {
+      cwd: path.resolve(projectRoot, 'backend'),
+      silent: false,
+    })
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function installDependencies({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
+  try {
+    const installer = (await ifValidCommand('yarn')) ?? (await ifValidCommand('npm'))
+    if (!installer) return
+    await runCommand(`${installer} install`, {
+      cwd: path.resolve(projectRoot, 'backend'),
+      silent: false,
+    })
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 export async function runCheckout({ open, skipCache, ...props }: Props) {
   return withErrorHandler(async () => {
     const selectedProject = await resolveProject(props)
@@ -39,9 +69,15 @@ export async function runCheckout({ open, skipCache, ...props }: Props) {
     const next = skipCache ? undefined : readCache(context.projectRoot)?.checkoutToken
     const checkoutResponse = await useCheckoutQuery({ projectId: selectedProject.id, next })
     const project = checkoutResponse.data.checkout.project
-    await ensureProjectDir(context)
+    const isFirstRun = !existsSync(path.resolve(context.projectRoot, '.git'))
+    if (isFirstRun) await ensureProjectDir(context)
     await writeSourceFiles(context.projectRoot, project.sourceFiles)
     saveCache(context.projectRoot, { checkoutToken: checkoutResponse.data.checkout.next })
+    if (isFirstRun) {
+      await saveAllHypergraphFiles(context)
+      await installDependencies(context)
+      await commit(context)
+    }
     if (open) {
       runCommand(`open ${context.projectRoot}/${toDashedName(project.name ?? '')}.code-workspace`)
     }

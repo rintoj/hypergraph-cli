@@ -1,7 +1,7 @@
 import { command, input } from 'clifer'
 import { readEnvironmentVariables } from '../../environment'
 import { withErrorHandler } from '../../util/error-handler'
-import { getProjectRoot } from '../../util/get-project-root'
+import { getBackendProjectRoot } from '../../util/get-project-root'
 import { listFiles, readPackageJSON } from '../../util/project-util'
 import { resolveFileByEnvironment } from '../../util/resolve-file-by-environment'
 import { runCommand } from '../../util/run-command'
@@ -93,7 +93,7 @@ async function run({
     if (deployment === DeploymentType.CLOUD_FUNCTIONS) {
       throw new Error(`This deployment type is not supported just yet: ${deployment} `)
     }
-    const projectRoot = `${(await getProjectRoot()) ?? ''}/backend`
+    const projectRoot = await getBackendProjectRoot()
     const packageJSON = await readPackageJSON(projectRoot)
     const projectName = packageJSON?.hypergraph?.projectName
     if (!projectName)
