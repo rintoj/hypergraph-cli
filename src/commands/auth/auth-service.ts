@@ -43,7 +43,7 @@ export async function authorize(serviceUrl: string, provider: AuthProvider) {
     const port: number = await findAvailablePort(startPort, endPort)
     const app = express()
 
-    app.get(['/code'], async (req, res) => {
+    app.get('/code', async (req, res) => {
       const authorizationCode = req.query.code as string
       res.send('<script>window.close()</script>You can close this window now.')
       if (!authorizationCode) {

@@ -1,18 +1,11 @@
-import {
-  ApolloClient,
-  ApolloQueryResult,
-  HttpLink,
-  InMemoryCache,
-  OperationVariables,
-} from '@apollo/client'
-import { DocumentNode } from 'graphql'
+import type { ApolloQueryResult, OperationVariables } from '@apollo/client'
+import { DocumentNode, print } from 'graphql'
 import fetch from 'node-fetch'
 import { config, resolveServiceUrl } from '../config/config'
 
 export interface QueryHookOptions<RequestType> {
   query?: DocumentNode
   variables?: RequestType
-  skip?: boolean
 }
 
 export async function useQuery<QueryType, RequestType extends OperationVariables>(
@@ -20,18 +13,14 @@ export async function useQuery<QueryType, RequestType extends OperationVariables
   options?: QueryHookOptions<RequestType>,
 ): Promise<ApolloQueryResult<QueryType>> {
   const uri = resolveServiceUrl()
-  const client = new ApolloClient({
-    cache: new InMemoryCache(),
-    link: new HttpLink({
-      uri,
-      fetch,
-      headers: {
-        Authorization: `Bearer ${config?.accessToken}`,
-      },
-    }),
+  const body = JSON.stringify({ query: print(query), ...options }, null, 2)
+  const response = await fetch(uri, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config?.accessToken}`,
+    },
+    body,
   })
-  return client.query<QueryType, RequestType>({
-    query,
-    ...options,
-  })
+  return response.json()
 }

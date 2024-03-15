@@ -12,7 +12,7 @@ interface Props {
 async function run({ provider = AuthProvider.Github }: Props) {
   try {
     const { remote } = readConfig()
-    const code = await authorize(remote ?? 'http:/localhost:4000', provider)
+    const code = await authorize(remote ?? 'http://localhost:4000', provider)
     const result = await signInWithCode({ variables: { code } })
     if (!result.data?.signInWithCode?.user) {
       throw new Error('Unable to login!')
