@@ -14,7 +14,7 @@ interface Props {
 
 export function saveSourceFiles(props: Props) {
   return withErrorHandler(async () => {
-    const files = sync(props.sourceFile ?? '**/*.hg.ts')
+    const files = sync(props.sourceFile ?? '**/*.hg.ts', { ignore: ['node_modules'] })
     const project = await resolveProject(props)
     const env = await readEnvironment()
     const sourceFiles = await Promise.all(
