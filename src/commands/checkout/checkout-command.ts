@@ -40,10 +40,7 @@ async function commit({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
 
 async function saveAllHypergraphFiles({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
   try {
-    await runCommand(`hypergraph save '**/*.hg.ts'`, {
-      cwd: path.resolve(projectRoot, 'backend'),
-      silent: false,
-    })
+    await runCommand(`hypergraph save '**/*.hg.ts'`, { cwd: projectRoot, silent: false })
   } catch (e) {
     console.error(e)
   }
@@ -53,13 +50,16 @@ async function installDependencies({ projectRoot }: Pick<ProjectContext, 'projec
   try {
     const installer = (await ifValidCommand('yarn')) ?? (await ifValidCommand('npm'))
     if (!installer) return
-    await runCommand(`${installer} install`, {
-      cwd: path.resolve(projectRoot, 'backend'),
-      silent: false,
-    })
+    await runCommand(`${installer} install`, { cwd: projectRoot, silent: false })
   } catch (e) {
     console.error(e)
   }
+}
+
+async function openProject({ projectRoot }: Pick<ProjectContext, 'projectRoot'>) {
+  const command = await ifValidCommand('code')
+  if (!command) return
+  runCommand(`${command} ${projectRoot}`)
 }
 
 export async function runCheckout({ open, skipCache, ...props }: Props) {
@@ -78,9 +78,7 @@ export async function runCheckout({ open, skipCache, ...props }: Props) {
       await installDependencies(context)
       await commit(context)
     }
-    if (open) {
-      runCommand(`open ${context.projectRoot}/${toDashedName(project.name ?? '')}.code-workspace`)
-    }
+    if (open) openProject(context)
   })
 }
 
