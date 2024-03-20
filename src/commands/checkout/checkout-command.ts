@@ -14,6 +14,7 @@ import { ProjectType, useCheckoutQuery } from './use-checkout-query.gql'
 interface Props {
   projectId?: string
   skipCache?: boolean
+  build?: boolean
   open?: boolean
 }
 
@@ -62,12 +63,12 @@ async function openProject({ projectRoot }: Pick<ProjectContext, 'projectRoot'>)
   runCommand(`${command} ${projectRoot}`)
 }
 
-export async function runCheckout({ open, skipCache, ...props }: Props) {
+export async function runCheckout({ open, skipCache, build = false, ...props }: Props) {
   return withErrorHandler(async () => {
     const selectedProject = await resolveProject(props)
     const context = await createContext(selectedProject as any)
     const next = skipCache ? undefined : readCache(context.projectRoot)?.checkoutToken
-    const checkoutResponse = await useCheckoutQuery({ projectId: selectedProject.id, next })
+    const checkoutResponse = await useCheckoutQuery({ projectId: selectedProject.id, build, next })
     const project = checkoutResponse.data.checkout.project
     const isFirstRun = !existsSync(path.resolve(context.projectRoot, '.git'))
     if (isFirstRun) await ensureProjectDir(context)
@@ -85,6 +86,7 @@ export async function runCheckout({ open, skipCache, ...props }: Props) {
 export default command<Props>('checkout')
   .description('Checkout a project')
   .option(input('projectId').description('Specify the ID of the project to checkout').string())
+  .option(input('build').description('Checkout build files'))
   .option(input('skipCache').description('Disable cache (enabled by default)'))
   .option(input('open').description('Open the project once it has been checked out'))
   .handle(runCheckout)

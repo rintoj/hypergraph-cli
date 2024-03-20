@@ -2,8 +2,8 @@ import { QueryHookOptions, useQuery } from '../../graphql'
 import gql from 'graphql-tag'
 
 const query = gql`
-  query fetchCheckout($next: String, $projectId: String!) {
-    checkout(next: $next, projectId: $projectId) {
+  query fetchCheckout($build: Boolean, $next: String, $projectId: String!) {
+    checkout(build: $build, next: $next, projectId: $projectId) {
       next
       project {
         id
@@ -19,6 +19,7 @@ const query = gql`
 `
 
 export interface RequestType {
+  build?: boolean | undefined
   next?: string | undefined
   projectId: string | undefined
 }
@@ -40,16 +41,16 @@ export interface ProjectType {
   __typename?: 'Project'
 }
 
-export enum SourceFileStatus {
-  ACTIVE = 'ACTIVE',
-  DELETED = 'DELETED',
-}
-
 export interface SourceFileType {
   fileName: string
   content: string[]
-  status: SourceFileStatus
+  status?: SourceFileStatus
   __typename?: 'SourceFile'
+}
+
+export enum SourceFileStatus {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
 }
 
 export function useCheckoutQuery(
