@@ -37,3 +37,12 @@ export async function readPackageJSON(root: string) {
     return undefined
   }
 }
+
+export async function readHypergraphJSON(root: string) {
+  try {
+    const content = await readFile(`${root}/hypergraph.json`, 'utf-8')
+    return JSON.parse(content)
+  } catch (e) {
+    return undefined
+  }
+}
