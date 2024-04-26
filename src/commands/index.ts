@@ -6,6 +6,7 @@ import collaborator from './collaborator/collaborator-command'
 import config from './config/config-command'
 import create from './create/create-command'
 import deploy from './deploy/deploy-command'
+import figma from './figma/figma-command'
 import gcloud from './gcloud/gcloud-command'
 import generate from './generate/generate-command'
 import project from './project/project-command'
@@ -19,6 +20,7 @@ export default cli('hypergraph')
   .command(config)
   .command(create)
   .command(deploy)
+  .command(figma)
   .command(gcloud)
   .command(generate)
   .command(project)
