@@ -222,8 +222,74 @@ export class GraphQLASTValidator {
       await this.validateEntityFiles(moduleName, moduleFiles.entities, moduleFiles.models)
     }
 
+    if (this.rules.checkInputFiles) {
+      await this.validateInputFiles(moduleName, moduleFiles.inputs)
+    }
+
     if (this.rules.checkResolverEndpoints) {
       await this.validateResolverEndpoints(moduleName, moduleFiles.resolvers, files)
+    }
+  }
+
+  private async validateInputFiles(moduleName: string, inputFiles: string[]) {
+    if (!this.program) return
+
+    const unnecessaryValidators = new Set([
+      'IsEnum',
+      'IsString',
+      'IsNumber',
+      'IsBoolean',
+      'IsInt',
+      'IsArray',
+      'IsObject',
+      'IsDate',
+    ])
+
+    for (const file of inputFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      this.visitNode(sourceFile, node => {
+        if (ts.isClassDeclaration(node)) {
+          const decorators = this.getDecorators(node)
+          const hasInputTypeDecorator = decorators.some(d => this.getDecoratorName(d) === 'InputType')
+
+          if (hasInputTypeDecorator) {
+            // Check each property for unnecessary validation decorators
+            node.members.forEach(member => {
+              if (ts.isPropertyDeclaration(member)) {
+                const propertyDecorators = this.getDecorators(member)
+                let propertyName = 'unknown'
+                if (member.name && ts.isIdentifier(member.name)) {
+                  propertyName = member.name.text
+                }
+
+                // Check if property has @Field decorator (GraphQL field)
+                const hasFieldDecorator = propertyDecorators.some(
+                  d => this.getDecoratorName(d) === 'Field',
+                )
+
+                if (hasFieldDecorator) {
+                  // Check for unnecessary validation decorators
+                  for (const decorator of propertyDecorators) {
+                    const decoratorName = this.getDecoratorName(decorator)
+
+                    if (unnecessaryValidators.has(decoratorName)) {
+                      const line = this.getLineNumber(sourceFile, decorator.getStart(sourceFile))
+                      this.addError(
+                        file,
+                        'unnecessary-validation',
+                        `@${decoratorName} validation is unnecessary in GraphQL input types. Type validation is enforced by the GraphQL layer. Remove this decorator for property '${propertyName}'.`,
+                        line,
+                      )
+                    }
+                  }
+                }
+              }
+            })
+          }
+        }
+      })
     }
   }
 
@@ -550,6 +616,9 @@ export class GraphQLASTValidator {
     for (const file of resolverFiles) {
       await this.validateResolverArguments(file)
     }
+
+    // Validate that event publishing is only in services
+    await this.validateEventPublishing(resolverFiles, allFiles)
   }
 
   private async validateResolverArguments(file: string) {
@@ -632,6 +701,39 @@ export class GraphQLASTValidator {
         }
       }
     })
+  }
+
+  private async validateEventPublishing(resolverFiles: string[], allFiles: string[]) {
+    if (!this.program) return
+
+    // Check resolvers for event publishing
+    for (const file of resolverFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      this.visitNode(sourceFile, node => {
+        // Check for method calls like emit(), publish(), dispatchEvent()
+        if (ts.isCallExpression(node)) {
+          const expression = node.expression
+
+          // Check for patterns like: this.eventEmitter.emit(), eventEmitter.emit(), this.emit()
+          if (ts.isPropertyAccessExpression(expression)) {
+            const methodName = expression.name.text
+
+            // Common event publishing methods
+            if (['emit', 'publish', 'dispatchEvent', 'publishEvent'].includes(methodName)) {
+              const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+              this.addError(
+                file,
+                'event-in-resolver',
+                `Event publishing should only be done in service layer, not in resolvers. Move this.${methodName}() to a service method.`,
+                line,
+              )
+            }
+          }
+        }
+      })
+    }
   }
 
   // Helper methods for AST traversal

@@ -416,6 +416,148 @@ async users(
 - **Evolution**: Easier to add/remove fields without breaking existing clients
 - **Validation**: Can add validation decorators to input class
 
+### 9. 🚫 Event Publishing in Resolvers
+
+**Rule:** Event publishing should only be done in the service layer, not in resolvers.
+
+**Why:** Resolvers should be thin and only responsible for handling GraphQL queries/mutations. Business logic including event publishing belongs in the service layer for better separation of concerns, testability, and reusability.
+
+**✅ Correct - Events in service:**
+\`\`\`typescript
+// user.service.ts
+import { Injectable } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+
+@Injectable()
+export class UserService {
+  constructor(private eventEmitter: EventEmitter2) {}
+
+  async createUser(input: CreateUserInput): Promise<User> {
+    const user = await this.userRepository.save(input)
+
+    // ✅ Event published in service
+    this.eventEmitter.emit('user.created', { user })
+
+    return user
+  }
+}
+
+// user.resolver.ts
+@Resolver(() => User)
+export class UserResolver {
+  constructor(private userService: UserService) {}
+
+  @Mutation(() => User)
+  async createUser(@Args('input') input: CreateUserInput): Promise<User> {
+    // ✅ Resolver delegates to service
+    return this.userService.createUser(input)
+  }
+}
+\`\`\`
+
+**❌ Incorrect - Events in resolver:**
+\`\`\`typescript
+// user.resolver.ts (WRONG!)
+@Resolver(() => User)
+export class UserResolver {
+  constructor(
+    private userService: UserService,
+    private eventEmitter: EventEmitter2, // ❌ Don't inject event emitter in resolver
+  ) {}
+
+  @Mutation(() => User)
+  async createUser(@Args('input') input: CreateUserInput): Promise<User> {
+    const user = await this.userService.createUser(input)
+
+    // ❌ Don't publish events from resolver
+    this.eventEmitter.emit('user.created', { user })
+
+    return user
+  }
+}
+\`\`\`
+
+**Benefits:**
+- **Separation of Concerns**: Keep resolvers thin and focused on GraphQL
+- **Reusability**: Service methods can be called from multiple places
+- **Testability**: Easier to test business logic separately
+- **Consistency**: Events are published consistently across all entry points
+
+### 10. ⚠️ Unnecessary Type Validation in Input Types
+
+**Rule:** Type validation decorators (like @IsEnum, @IsString, @IsNumber) are unnecessary in GraphQL input types because type validation is already enforced by the GraphQL layer.
+
+**Why:** GraphQL's type system already validates that fields match their declared types. Adding class-validator decorators for type checking creates redundant validation and can lead to confusing error messages.
+
+**✅ Correct - Only business validation:**
+\`\`\`typescript
+// user.input.ts
+import { InputType, Field } from '@nestjs/graphql'
+import { IsEmail, MinLength, MaxLength } from 'class-validator'
+import { UserRole } from './user.model'
+
+@InputType()
+export class CreateUserInput {
+  @Field()
+  @IsEmail() // ✅ Business validation (format check)
+  email: string
+
+  @Field()
+  @MinLength(2) // ✅ Business validation (constraint)
+  @MaxLength(50)
+  name: string
+
+  @Field(() => UserRole)
+  role: UserRole // ✅ GraphQL handles enum validation
+
+  @Field(() => Int)
+  age: number // ✅ GraphQL handles type validation
+}
+\`\`\`
+
+**❌ Incorrect - Redundant type validation:**
+\`\`\`typescript
+// user.input.ts (WRONG!)
+import { InputType, Field } from '@nestjs/graphql'
+import { IsEnum, IsString, IsNumber, IsEmail } from 'class-validator'
+import { UserRole } from './user.model'
+
+@InputType()
+export class CreateUserInput {
+  @Field()
+  @IsString() // ❌ Redundant - GraphQL already validates this
+  @IsEmail() // ✅ This is OK - validates email format
+  email: string
+
+  @Field(() => UserRole)
+  @IsEnum(UserRole) // ❌ Redundant - GraphQL already validates enum
+  role: UserRole
+
+  @Field(() => Int)
+  @IsNumber() // ❌ Redundant - GraphQL already validates this
+  @IsInt() // ❌ Redundant - GraphQL already validates this
+  age: number
+}
+\`\`\`
+
+**Keep these validators (business logic):**
+- ✅ @IsEmail() - Validates email format
+- ✅ @MinLength() / @MaxLength() - String length constraints
+- ✅ @Min() / @Max() - Number range constraints
+- ✅ @IsUrl() - URL format validation
+- ✅ @Matches() - Regex pattern matching
+- ✅ @IsOptional() - Marks optional fields
+- ✅ Custom validators - Business-specific rules
+
+**Remove these validators (type checking):**
+- ❌ @IsEnum() - GraphQL validates enum types
+- ❌ @IsString() - GraphQL validates string types
+- ❌ @IsNumber() / @IsInt() - GraphQL validates number types
+- ❌ @IsBoolean() - GraphQL validates boolean types
+- ❌ @IsArray() - GraphQL validates array types
+- ❌ @IsObject() - GraphQL validates object types
+- ❌ @IsDate() - GraphQL validates date types
+
 ## Special Cases & Exceptions
 
 ### 🏠 App Module Exception
@@ -573,7 +715,7 @@ shared/
 
 When using \`@hgraph/storage\` library, additional validation rules are applied to ensure proper integration with TypeORM and NestJS.
 
-### 9. 🗄️ Entity/Model Files (.model.ts)
+### 11. 🗄️ Entity/Model Files (.model.ts)
 
 **Rule:** When using @hgraph/storage, TypeORM entities should preferably be in \`.model.ts\` files
 
@@ -630,7 +772,7 @@ export class User {
 }
 \`\`\`
 
-### 10. 📚 Repository Files (.repository.ts)
+### 12. 📚 Repository Files (.repository.ts)
 
 **Rule:** Repository classes must extend proper base classes from @hgraph/storage
 
@@ -697,7 +839,7 @@ export class UserRepository extends Repository<User> {
 }
 \`\`\`
 
-### 11. 💉 Service Dependency Injection
+### 13. 💉 Service Dependency Injection
 
 **Rule:** Services must use \`@InjectRepo()\` decorator for repository injection
 
@@ -764,7 +906,7 @@ async findUsers() {
 }
 \`\`\`
 
-### 12. 📦 Module Configuration
+### 14. 📦 Module Configuration
 
 **Rule:** Modules must properly configure StorageModule
 
@@ -822,7 +964,7 @@ StorageModule.forRoot({
 export class UserModule {}
 \`\`\`
 
-### 13. 🔍 Query Patterns
+### 15. 🔍 Query Patterns
 
 **Rule:** Use @hgraph/storage query builder methods
 
@@ -854,7 +996,7 @@ const cachedUsers = await repo.find(query =>
 )
 \`\`\`
 
-### 14. 🚀 Performance Optimizations
+### 16. 🚀 Performance Optimizations
 
 **N+1 Query Prevention:**
 \`\`\`typescript
@@ -874,7 +1016,7 @@ export class UserResolver {
 }
 \`\`\`
 
-### 15. 🔥 Firestore-Specific Rules
+### 17. 🔥 Firestore-Specific Rules
 
 When using Firestore backend:
 
@@ -902,7 +1044,7 @@ export class UserRepository extends FirestoreRepositoryWithIdCache<User> {
 - ❌ No join queries
 - ❌ No soft delete
 
-### 16. 🧪 Testing Patterns
+### 18. 🧪 Testing Patterns
 
 **Mock Database Testing:**
 \`\`\`typescript
@@ -928,6 +1070,8 @@ beforeEach(async () => {
 | \`model-location\` | Entity or ObjectType in wrong file | Move to .model.ts file |
 | \`resolver-location\` | GraphQL operations outside resolver | Move to .resolver.ts file |
 | \`multiple-args-decorators\` | More than 1 @Args() in endpoint | Combine into single input type |
+| \`event-in-resolver\` | Event publishing in resolver | Move emit/publish to service layer |
+| \`unnecessary-validation\` | Type validation in input types | Remove @IsEnum, @IsString, etc. Keep business validators |
 | \`missing-column-decorator\` | Entity property lacks decorator | Add @Column() or relation decorator |
 | \`entity-file-not-allowed\` | Using .entity.ts files | Move entities to .model.ts files |
 
