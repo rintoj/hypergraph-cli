@@ -1,4 +1,4 @@
-import { yellow } from 'chalk'
+import chalk from 'chalk'
 import { exec } from 'shelljs'
 
 interface Options {
@@ -9,7 +9,7 @@ interface Options {
 
 function showCommand(command: string) {
   console.log(
-    yellow(
+    chalk.yellow(
       `\n$ ${command
         .split(/\n|\s/)
         .map(i => i.trim())
