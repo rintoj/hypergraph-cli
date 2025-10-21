@@ -12,7 +12,6 @@ export async function fetchFigma(url: string, data?: Record<string, string>) {
       'X-FIGMA-TOKEN': config.figmaToken as string,
     },
   })
-
   if (!response.ok) throw new Error(response.statusText)
   return response.json()
 }
