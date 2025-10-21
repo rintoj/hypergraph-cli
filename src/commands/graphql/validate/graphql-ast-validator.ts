@@ -710,13 +710,17 @@ export class GraphQLASTValidator {
   }
 
   private async validateModuleNaming(moduleName: string, moduleFiles: string[], allFiles: string[]) {
-    // Check if this module has resolvers or controllers (files that would require a .module.ts)
-    const hasResolverOrController = allFiles.some(
-      file => file.endsWith('.resolver.ts') || file.endsWith('.controller.ts'),
+    // Check if this module has any NestJS-related files that would require a .module.ts
+    const hasNestJSFiles = allFiles.some(
+      file =>
+        file.endsWith('.resolver.ts') ||
+        file.endsWith('.controller.ts') ||
+        file.endsWith('.service.ts') ||
+        file.endsWith('.model.ts'),
     )
 
-    // Check if module file exists - only required if module has resolvers or controllers
-    if (moduleFiles.length === 0 && hasResolverOrController && moduleName !== 'app') {
+    // Check if module file exists - only required if module has any NestJS files
+    if (moduleFiles.length === 0 && hasNestJSFiles && moduleName !== 'app') {
       this.addWarning(
         moduleName,
         'missing-module',
