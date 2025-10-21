@@ -2,6 +2,7 @@ import fs from 'fs-extra'
 
 interface Config {
   accessToken?: string | null
+  figmaToken?: string | null
   remote?: string
   projectId?: string
 }

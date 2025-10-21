@@ -1,4 +1,4 @@
-import { green, red, yellow } from 'chalk'
+import chalk from 'chalk'
 import { ensureDir, exists, readFile, readdir, rm, rmdir, writeFile } from 'fs-extra'
 import { basename, dirname, extname, resolve } from 'path'
 import { format } from 'prettier'
@@ -31,7 +31,7 @@ export function prettify(code: string) {
 
 async function deleteFile(file: string) {
   await rm(file)
-  console.log(`${red('[DELETE]')} ${file}`)
+  console.log(`${chalk.red('[DELETE]')} ${file}`)
   let dirName = dirname(file)
   let maxDepth = 10
   try {
@@ -61,7 +61,9 @@ export function writeSourceFiles(root: string, sourceFiles: Array<SourceFileType
 
       // update or create file
       await ensureDir(dir)
-      console.log(`${fileExists ? yellow('[UPDATE]') : green('[CREATE]')} ${sourceFile.fileName}`)
+      console.log(
+        `${fileExists ? chalk.yellow('[UPDATE]') : chalk.green('[CREATE]')} ${sourceFile.fileName}`,
+      )
       const extension = extname(file)
       const fileContent = sourceFile.content.join('\n')
       const content = extension === '.ts' ? await prettify(fileContent) : fileContent

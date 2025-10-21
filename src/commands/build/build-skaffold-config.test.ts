@@ -30,7 +30,7 @@ deploy:
       - services/api-service/deployment.dev
       - services/ingress-service/deployment.dev
 portForward:
-  - resourceName: api
+  - resourceName: todo-api
     resourceType: Service
     namespace: todo-dev
     port: 80
