@@ -14,7 +14,8 @@ interface Props {
 // Syntax highlighting for TypeScript code
 function highlightTypeScriptSyntax(code: string): string {
   // Keywords
-  const keywords = /\b(import|export|class|interface|function|async|await|const|let|var|if|else|for|while|return|extends|implements|public|private|protected|readonly|static|new|this|super|typeof|instanceof|in|of|as|from)\b/g
+  const keywords =
+    /\b(import|export|class|interface|function|async|await|const|let|var|if|else|for|while|return|extends|implements|public|private|protected|readonly|static|new|this|super|typeof|instanceof|in|of|as|from)\b/g
 
   // Decorators
   const decorators = /@\w+/g
@@ -85,7 +86,9 @@ function displayResults(result: ValidationResult, strict: boolean) {
       parts.push(chalk.red(`${result.errors.length} error${result.errors.length === 1 ? '' : 's'}`))
     }
     if (result.warnings.length > 0) {
-      parts.push(chalk.yellow(`${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'}`))
+      parts.push(
+        chalk.yellow(`${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'}`),
+      )
     }
     console.log(`\nFound ${parts.join(' and ')}\n`)
   }
@@ -147,7 +150,6 @@ function displayResults(result: ValidationResult, strict: boolean) {
       console.log()
     })
   }
-
 
   // Final status
   if (result.errors.length === 0 && result.warnings.length === 0) {

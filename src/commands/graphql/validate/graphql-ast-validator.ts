@@ -42,7 +42,10 @@ export class GraphQLASTValidator {
   private program: ts.Program | null = null
   private resolverFields = new Map<string, Set<string>>() // className -> Set of field names
 
-  constructor(private rootPath: string, private rules: ValidationRules) {}
+  constructor(
+    private rootPath: string,
+    private rules: ValidationRules,
+  ) {}
 
   async validate(): Promise<ValidationResult> {
     this.errors = []
@@ -61,7 +64,7 @@ export class GraphQLASTValidator {
       'build/**',
       '**/*.spec.ts',
       '**/*.test.ts',
-      ...gitignorePatterns
+      ...gitignorePatterns,
     ]
 
     // Find all TypeScript files
@@ -239,7 +242,7 @@ export class GraphQLASTValidator {
       if (!sourceFile) continue
 
       // Check for @Entity or @ObjectType decorators in wrong files
-      this.visitNode(sourceFile, (node) => {
+      this.visitNode(sourceFile, node => {
         if (ts.isClassDeclaration(node)) {
           const decorators = this.getDecorators(node)
           for (const decorator of decorators) {
@@ -251,7 +254,7 @@ export class GraphQLASTValidator {
                 file,
                 'model-location',
                 `TypeORM entities should be in .model.ts files, found in ${path.basename(file)}`,
-                line
+                line,
               )
             }
 
@@ -260,8 +263,10 @@ export class GraphQLASTValidator {
               this.addError(
                 file,
                 'model-location',
-                `GraphQL object types (non-response) should be in .model.ts files, found in ${path.basename(file)}`,
-                line
+                `GraphQL object types (non-response) should be in .model.ts files, found in ${path.basename(
+                  file,
+                )}`,
+                line,
               )
             }
           }
@@ -270,7 +275,11 @@ export class GraphQLASTValidator {
     }
   }
 
-  private async validateEntityFiles(moduleName: string, entityFiles: string[], modelFiles: string[]) {
+  private async validateEntityFiles(
+    moduleName: string,
+    entityFiles: string[],
+    modelFiles: string[],
+  ) {
     if (!this.program) return
 
     // Entity files should not exist
@@ -279,7 +288,7 @@ export class GraphQLASTValidator {
         this.addError(
           file,
           'entity-file-not-allowed',
-          'Entity files (.entity.ts) are not allowed. TypeORM entities should be in .model.ts files'
+          'Entity files (.entity.ts) are not allowed. TypeORM entities should be in .model.ts files',
         )
       }
     }
@@ -289,7 +298,7 @@ export class GraphQLASTValidator {
       const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
       if (!sourceFile) continue
 
-      this.visitNode(sourceFile, (node) => {
+      this.visitNode(sourceFile, node => {
         if (ts.isClassDeclaration(node)) {
           const decorators = this.getDecorators(node)
           const hasEntityDecorator = decorators.some(d => this.getDecoratorName(d) === 'Entity')
@@ -303,16 +312,30 @@ export class GraphQLASTValidator {
     }
   }
 
-  private validateEntityProperties(classNode: ts.ClassDeclaration, file: string, sourceFile: ts.SourceFile) {
+  private validateEntityProperties(
+    classNode: ts.ClassDeclaration,
+    file: string,
+    sourceFile: ts.SourceFile,
+  ) {
     const columnDecorators = new Set([
-      'Column', 'PrimaryColumn', 'PrimaryGeneratedColumn',
-      'CreateDateColumn', 'UpdateDateColumn', 'DeleteDateColumn',
-      'VersionColumn', 'Generated'
+      'Column',
+      'PrimaryColumn',
+      'PrimaryGeneratedColumn',
+      'CreateDateColumn',
+      'UpdateDateColumn',
+      'DeleteDateColumn',
+      'VersionColumn',
+      'Generated',
     ])
 
     const relationDecorators = new Set([
-      'ManyToOne', 'OneToMany', 'OneToOne', 'ManyToMany',
-      'JoinColumn', 'JoinTable', 'RelationId'
+      'ManyToOne',
+      'OneToMany',
+      'OneToOne',
+      'ManyToMany',
+      'JoinColumn',
+      'JoinTable',
+      'RelationId',
     ])
 
     // Get the class name to check resolver fields
@@ -352,7 +375,8 @@ export class GraphQLASTValidator {
         // If it's a property without any persistence decorator
         if (!hasColumnDecorator && !hasRelationDecorator && propertyName) {
           // Check if this is a computed field with a resolver
-          const isComputedField = className &&
+          const isComputedField =
+            className &&
             this.resolverFields.has(className) &&
             this.resolverFields.get(className)?.has(propertyName)
 
@@ -363,7 +387,7 @@ export class GraphQLASTValidator {
               file,
               'missing-column-decorator',
               'Entity properties should have @Column() or relation decorator for persistence (or be computed via resolver)',
-              line
+              line,
             )
           }
         }
@@ -378,7 +402,7 @@ export class GraphQLASTValidator {
       const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
       if (!sourceFile) continue
 
-      this.visitNode(sourceFile, (node) => {
+      this.visitNode(sourceFile, node => {
         if (ts.isClassDeclaration(node)) {
           const decorators = this.getDecorators(node)
 
@@ -480,10 +504,20 @@ export class GraphQLASTValidator {
     }
   }
 
-  private async validateResolverEndpoints(moduleName: string, resolverFiles: string[], allFiles: string[]) {
+  private async validateResolverEndpoints(
+    moduleName: string,
+    resolverFiles: string[],
+    allFiles: string[],
+  ) {
     if (!this.program) return
 
-    const resolverDecorators = new Set(['Query', 'Mutation', 'Subscription', 'ResolveField', 'FieldResolver'])
+    const resolverDecorators = new Set([
+      'Query',
+      'Mutation',
+      'Subscription',
+      'ResolveField',
+      'FieldResolver',
+    ])
 
     // Check if GraphQL operations exist outside of resolver files
     for (const file of allFiles) {
@@ -492,7 +526,7 @@ export class GraphQLASTValidator {
       const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
       if (!sourceFile) continue
 
-      this.visitNode(sourceFile, (node) => {
+      this.visitNode(sourceFile, node => {
         if (ts.isMethodDeclaration(node)) {
           const decorators = this.getDecorators(node)
           for (const decorator of decorators) {
@@ -504,7 +538,7 @@ export class GraphQLASTValidator {
                 file,
                 'resolver-location',
                 'GraphQL operations (Query, Mutation, Subscription, Field resolvers) should only be in .resolver.ts files',
-                line
+                line,
               )
             }
           }

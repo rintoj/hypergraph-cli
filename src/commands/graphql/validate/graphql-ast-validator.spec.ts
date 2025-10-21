@@ -1,6 +1,10 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { GraphQLASTValidator as GraphQLValidator, ValidationRules, ValidationResult } from './graphql-ast-validator'
+import {
+  GraphQLASTValidator as GraphQLValidator,
+  ValidationRules,
+  ValidationResult,
+} from './graphql-ast-validator'
 import { glob } from 'glob'
 
 // Mock the glob module
