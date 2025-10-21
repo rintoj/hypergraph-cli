@@ -19,7 +19,11 @@
     "build": "rimraf dist && tsc -p .",
     "semantic-release": "semantic-release",
     "cli": "ts-node src/index.ts",
-    "start": "rimraf dist && tsc -p . --watch"
+    "start": "rimraf dist && tsc -p . --watch",
+    "version:major": "npm version major",
+    "version:minor": "npm version minor",
+    "version:patch": "npm version patch",
+    "version:prerelease": "npm version prerelease --preid=alpha"
   },
   "license": "MIT",
   "private": false,
@@ -100,7 +104,7 @@
   },
   "release": {
     "branches": [
-      "master"
+      "main"
     ]
   }
 }

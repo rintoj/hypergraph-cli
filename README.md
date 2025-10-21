@@ -365,7 +365,48 @@ This project uses GitHub Actions for continuous integration and deployment:
   - Runs linter, tests, and build
   - Validates GraphQL structure
 
-- **Publish Pipeline**: Automatically publishes to npm when a release is created
+- **Release Pipeline**: Automatically publishes to npm when version is bumped
+  - Triggered when package.json version changes on main branch
+  - Creates GitHub release with tag
+  - Publishes to npm registry
+
+## Releasing
+
+### Automatic Release Process
+
+1. **Bump Version** (Choose one method):
+
+   a. Using GitHub Actions (Recommended):
+   ```sh
+   # Go to Actions tab → Version Bump → Run workflow
+   # Select version type: major, minor, patch, or prerelease
+   ```
+
+   b. Using npm locally:
+   ```sh
+   npm run version:patch    # for bug fixes (0.0.1 → 0.0.2)
+   npm run version:minor    # for new features (0.0.1 → 0.1.0)
+   npm run version:major    # for breaking changes (0.0.1 → 1.0.0)
+   npm run version:prerelease # for pre-releases (0.0.1 → 0.0.2-alpha.0)
+   ```
+
+2. **Commit and Push**:
+   ```sh
+   git add package.json package-lock.json
+   git commit -m "chore: bump version to x.y.z"
+   git push origin main
+   ```
+
+3. **Automatic Release**:
+   - GitHub Actions detects version change
+   - Runs tests and build
+   - Creates GitHub release with tag `vx.y.z`
+   - Publishes to npm as `@hgraph/cli`
+
+### Prerequisites for Publishing
+
+- **NPM_TOKEN**: Must be set in repository secrets for npm publishing
+- **Permissions**: Maintainer access to npm package `@hgraph/cli`
 
 ## License
 

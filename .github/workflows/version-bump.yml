@@ -1,0 +1,89 @@
+name: Version Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-type:
+        description: 'Version type to bump'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - prerelease
+      prerelease-id:
+        description: 'Prerelease identifier (alpha, beta, rc)'
+        required: false
+        default: 'alpha'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Bump Version
+      id: bump
+      run: |
+        # Get current version
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        echo "Current version: $CURRENT_VERSION"
+
+        # Bump version based on input
+        if [ "${{ github.event.inputs.version-type }}" = "prerelease" ]; then
+          NEW_VERSION=$(npm version prerelease --preid=${{ github.event.inputs.prerelease-id }} --no-git-tag-version)
+        else
+          NEW_VERSION=$(npm version ${{ github.event.inputs.version-type }} --no-git-tag-version)
+        fi
+
+        # Clean up 'v' prefix if npm added it
+        NEW_VERSION=${NEW_VERSION#v}
+        echo "New version: $NEW_VERSION"
+        echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: bump version to ${{ steps.bump.outputs.version }}"
+        title: "chore: bump version to ${{ steps.bump.outputs.version }}"
+        body: |
+          ## Version Bump
+
+          This PR bumps the version to `${{ steps.bump.outputs.version }}`.
+
+          ### Type: ${{ github.event.inputs.version-type }}
+
+          After merging this PR, the release workflow will automatically:
+          - Create a GitHub release
+          - Publish to npm
+          - Tag the release
+
+          ### Checklist
+          - [ ] Review changelog
+          - [ ] Ensure all tests pass
+          - [ ] Verify build succeeds
+        branch: version-bump-${{ steps.bump.outputs.version }}
+        delete-branch: true
+        labels: |
+          release
+          automated
