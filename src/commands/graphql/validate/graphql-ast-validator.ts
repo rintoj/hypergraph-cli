@@ -545,6 +545,93 @@ export class GraphQLASTValidator {
         }
       })
     }
+
+    // Validate resolver files for multiple @Args() decorators
+    for (const file of resolverFiles) {
+      await this.validateResolverArguments(file)
+    }
+  }
+
+  private async validateResolverArguments(file: string) {
+    if (!this.program) return
+
+    const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+    if (!sourceFile) return
+
+    this.visitNode(sourceFile, node => {
+      if (ts.isMethodDeclaration(node)) {
+        // Check if this is a Query, Mutation, or Subscription
+        const decorators = this.getDecorators(node)
+        let isGraphQLEndpoint = false
+
+        for (const decorator of decorators) {
+          const decoratorName = this.getDecoratorName(decorator)
+          if (['Query', 'Mutation', 'Subscription'].includes(decoratorName)) {
+            isGraphQLEndpoint = true
+            break
+          }
+        }
+
+        if (isGraphQLEndpoint && node.parameters) {
+          // Count @Args() decorators
+          let argsCount = 0
+          const argsParameters: Array<{ name: string; line: number }> = []
+
+          for (const param of node.parameters) {
+            const paramDecorators = this.getDecorators(param)
+            for (const decorator of paramDecorators) {
+              const decoratorName = this.getDecoratorName(decorator)
+              if (decoratorName === 'Args') {
+                argsCount++
+
+                // Try to extract the argument name from @Args('argName')
+                let argName = 'unknown'
+                const expression = decorator.expression
+                if (ts.isCallExpression(expression) && expression.arguments.length > 0) {
+                  const firstArg = expression.arguments[0]
+                  if (ts.isStringLiteral(firstArg)) {
+                    argName = firstArg.text
+                  }
+                }
+
+                // If no explicit name in decorator, use parameter name
+                if (argName === 'unknown' && param.name && ts.isIdentifier(param.name)) {
+                  argName = param.name.text
+                }
+
+                const line = this.getLineNumber(sourceFile, param.getStart(sourceFile))
+                argsParameters.push({ name: argName, line })
+              }
+            }
+          }
+
+          // If there are more than 1 @Args() decorator, report an error
+          if (argsCount > 1) {
+            const methodName = node.name && ts.isIdentifier(node.name) ? node.name.text : 'unknown'
+            const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+
+            const paramList = argsParameters.map(p => `@Args('${p.name}')`).join(', ')
+
+            this.addError(
+              file,
+              'multiple-args-decorators',
+              `GraphQL endpoints should have maximum 1 @Args() decorator. Method '${methodName}' has ${argsCount} @Args() decorators (${paramList}). When there are multiple arguments, combine them into a single input type.`,
+              line,
+            )
+
+            // Add specific errors for each @Args parameter
+            for (const param of argsParameters) {
+              this.addError(
+                file,
+                'multiple-args-decorators',
+                `Parameter '${param.name}' should be part of an input type instead of using @Args() directly`,
+                param.line,
+              )
+            }
+          }
+        }
+      }
+    })
   }
 
   // Helper methods for AST traversal

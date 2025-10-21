@@ -357,6 +357,65 @@ export class User {
 }
 \`\`\`
 
+### 8. 🎯 GraphQL Arguments Pattern
+
+**Rule:** Maximum of 1 direct @Args() decorator is allowed for any Query, Mutation, or Subscription. When you have multiple arguments, combine them into a single input type.
+
+**Why:** Using input types for multiple arguments improves API consistency, makes the schema more maintainable, and enables better validation and documentation.
+
+**✅ Correct - Single argument:**
+\`\`\`typescript
+// user.resolver.ts
+@Query(() => User)
+async user(@Args('id') id: string): Promise<User> {
+  return this.userService.findById(id)
+}
+\`\`\`
+
+**✅ Correct - Multiple arguments using input type:**
+\`\`\`typescript
+// user.input.ts
+@InputType()
+export class GetUsersInput {
+  @Field({ nullable: true })
+  role?: string
+
+  @Field({ nullable: true })
+  cursor?: string
+
+  @Field(() => Int, { defaultValue: 50 })
+  limit: number
+}
+
+// user.resolver.ts
+@Query(() => [User])
+async users(@Args('input') input: GetUsersInput): Promise<User[]> {
+  return this.userService.findUsers(input)
+}
+\`\`\`
+
+**❌ Incorrect - Multiple @Args() decorators:**
+\`\`\`typescript
+// user.resolver.ts (WRONG!)
+@Query(() => [User])
+async users(
+  @Args('groupId') groupId: string,
+  @Args('role', { nullable: true }) role?: string,
+  @Args('cursor', { nullable: true }) cursor?: string,
+  @Args('limit', { defaultValue: 50 }) limit?: number,
+): Promise<User[]> {
+  // ❌ Should use a single input type instead of multiple @Args()
+  return this.userService.findUsers(groupId, role, cursor, limit)
+}
+\`\`\`
+
+**Benefits of using Input Types:**
+- **Type Safety**: Input types are strongly typed and validated
+- **Reusability**: Same input type can be used across multiple resolvers
+- **Documentation**: Better GraphQL schema documentation
+- **Evolution**: Easier to add/remove fields without breaking existing clients
+- **Validation**: Can add validation decorators to input class
+
 ## Special Cases & Exceptions
 
 ### 🏠 App Module Exception
@@ -514,7 +573,7 @@ shared/
 
 When using \`@hgraph/storage\` library, additional validation rules are applied to ensure proper integration with TypeORM and NestJS.
 
-### 8. 🗄️ Entity/Model Files (.model.ts)
+### 9. 🗄️ Entity/Model Files (.model.ts)
 
 **Rule:** When using @hgraph/storage, TypeORM entities should preferably be in \`.model.ts\` files
 
@@ -571,7 +630,7 @@ export class User {
 }
 \`\`\`
 
-### 9. 📚 Repository Files (.repository.ts)
+### 10. 📚 Repository Files (.repository.ts)
 
 **Rule:** Repository classes must extend proper base classes from @hgraph/storage
 
@@ -638,7 +697,7 @@ export class UserRepository extends Repository<User> {
 }
 \`\`\`
 
-### 10. 💉 Service Dependency Injection
+### 11. 💉 Service Dependency Injection
 
 **Rule:** Services must use \`@InjectRepo()\` decorator for repository injection
 
@@ -705,7 +764,7 @@ async findUsers() {
 }
 \`\`\`
 
-### 11. 📦 Module Configuration
+### 12. 📦 Module Configuration
 
 **Rule:** Modules must properly configure StorageModule
 
@@ -763,7 +822,7 @@ StorageModule.forRoot({
 export class UserModule {}
 \`\`\`
 
-### 12. 🔍 Query Patterns
+### 13. 🔍 Query Patterns
 
 **Rule:** Use @hgraph/storage query builder methods
 
@@ -795,7 +854,7 @@ const cachedUsers = await repo.find(query =>
 )
 \`\`\`
 
-### 13. 🚀 Performance Optimizations
+### 14. 🚀 Performance Optimizations
 
 **N+1 Query Prevention:**
 \`\`\`typescript
@@ -815,7 +874,7 @@ export class UserResolver {
 }
 \`\`\`
 
-### 14. 🔥 Firestore-Specific Rules
+### 15. 🔥 Firestore-Specific Rules
 
 When using Firestore backend:
 
@@ -843,7 +902,7 @@ export class UserRepository extends FirestoreRepositoryWithIdCache<User> {
 - ❌ No join queries
 - ❌ No soft delete
 
-### 15. 🧪 Testing Patterns
+### 16. 🧪 Testing Patterns
 
 **Mock Database Testing:**
 \`\`\`typescript
@@ -859,6 +918,18 @@ beforeEach(async () => {
 \`\`\`
 
 ## Validation Error Reference
+
+### General GraphQL Validation Errors
+
+| Error Code | Description | Solution |
+|------------|-------------|----------|
+| \`input-location\` | @InputType decorator in wrong file | Move to .input.ts file |
+| \`response-location\` | Response @ObjectType in wrong file | Move to .response.ts file |
+| \`model-location\` | Entity or ObjectType in wrong file | Move to .model.ts file |
+| \`resolver-location\` | GraphQL operations outside resolver | Move to .resolver.ts file |
+| \`multiple-args-decorators\` | More than 1 @Args() in endpoint | Combine into single input type |
+| \`missing-column-decorator\` | Entity property lacks decorator | Add @Column() or relation decorator |
+| \`entity-file-not-allowed\` | Using .entity.ts files | Move entities to .model.ts files |
 
 ### @hgraph/storage Specific Errors
 

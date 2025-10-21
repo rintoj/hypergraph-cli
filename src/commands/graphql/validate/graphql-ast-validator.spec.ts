@@ -29,6 +29,9 @@ describe('GraphQLValidator', () => {
     checkResolverFiles: true,
     checkServiceFiles: true,
     checkResolverEndpoints: true,
+    checkHgraphStorage: false,
+    checkEntityFiles: false,
+    checkRepositoryFiles: false,
   }
 
   beforeEach(() => {
@@ -584,6 +587,131 @@ describe('GraphQLValidator', () => {
 
       // Should pass because class name ends with Service
       expect(result.errors.filter(e => e.rule === 'service-class')).toHaveLength(0)
+    })
+  })
+
+  describe('GraphQL Arguments Validation', () => {
+    it('should pass when resolver has single @Args() decorator', async () => {
+      const mockFiles = ['src/user/user.resolver.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
+        if (path.includes('user.resolver.ts')) {
+          return Promise.resolve(`
+            @Resolver()
+            export class UserResolver {
+              @Query(() => User)
+              async user(@Args('id') id: string) {
+                return new User();
+              }
+
+              @Query(() => [User])
+              async users(@Args('input') input: GetUsersInput) {
+                return [];
+              }
+            }
+          `)
+        }
+        return Promise.resolve('')
+      })
+
+      const result = await validator.validate()
+
+      expect(result.errors.filter(e => e.rule === 'multiple-args-decorators')).toHaveLength(0)
+    })
+
+    it('should fail when resolver has multiple @Args() decorators', async () => {
+      const mockFiles = ['src/user/user.resolver.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
+        if (path.includes('user.resolver.ts')) {
+          return Promise.resolve(`
+            @Resolver()
+            export class UserResolver {
+              @Query(() => [User])
+              async users(
+                @Args('groupId') groupId: string,
+                @Args('role', { nullable: true }) role?: string,
+                @Args('cursor', { nullable: true }) cursor?: string,
+                @Args('limit', { defaultValue: 50 }) limit?: number,
+              ) {
+                return [];
+              }
+            }
+          `)
+        }
+        return Promise.resolve('')
+      })
+
+      const result = await validator.validate()
+
+      const multipleArgsErrors = result.errors.filter(e => e.rule === 'multiple-args-decorators')
+      expect(multipleArgsErrors).toHaveLength(5) // 1 main error + 4 parameter errors
+      expect(multipleArgsErrors[0].message).toContain('should have maximum 1 @Args() decorator')
+      expect(multipleArgsErrors[0].message).toContain('has 4 @Args() decorators')
+    })
+
+    it('should check mutations for multiple @Args() decorators', async () => {
+      const mockFiles = ['src/user/user.resolver.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
+        if (path.includes('user.resolver.ts')) {
+          return Promise.resolve(`
+            @Resolver()
+            export class UserResolver {
+              @Mutation(() => User)
+              async updateUser(
+                @Args('id') id: string,
+                @Args('input') input: UpdateUserInput,
+              ) {
+                return new User();
+              }
+            }
+          `)
+        }
+        return Promise.resolve('')
+      })
+
+      const result = await validator.validate()
+
+      const multipleArgsErrors = result.errors.filter(e => e.rule === 'multiple-args-decorators')
+      expect(multipleArgsErrors).toHaveLength(3) // 1 main error + 2 parameter errors
+      expect(multipleArgsErrors[0].message).toContain('should have maximum 1 @Args() decorator')
+    })
+
+    it('should not check ResolveField for multiple @Args() decorators', async () => {
+      const mockFiles = ['src/user/user.resolver.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
+        if (path.includes('user.resolver.ts')) {
+          return Promise.resolve(`
+            @Resolver(() => User)
+            export class UserResolver {
+              @ResolveField(() => [Post])
+              async posts(
+                @Parent() user: User,
+                @Args('limit') limit: number,
+                @Args('offset') offset: number,
+              ) {
+                return [];
+              }
+            }
+          `)
+        }
+        return Promise.resolve('')
+      })
+
+      const result = await validator.validate()
+
+      // ResolveField should not be checked for multiple @Args()
+      expect(result.errors.filter(e => e.rule === 'multiple-args-decorators')).toHaveLength(0)
     })
   })
 
