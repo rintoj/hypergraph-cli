@@ -1,5 +1,9 @@
 # Hypergraph CLI
 
+[![CI](https://github.com/rintoj/hypergraph-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/rintoj/hypergraph-cli/actions/workflows/ci.yml)
+[![npm version](https://badge.fury.io/js/%40hgraph%2Fcli.svg)](https://www.npmjs.com/package/@hgraph/cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 `hypergraph` is a command-line interface (CLI) tool designed to facilitate various tasks related to project management, deployment, GraphQL validation, and design system integration using the Hypergraph platform.
 
 ## Install
