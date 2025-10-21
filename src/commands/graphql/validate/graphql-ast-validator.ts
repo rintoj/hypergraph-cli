@@ -673,14 +673,8 @@ export class GraphQLASTValidator {
       }
     }
 
-    // Check if module is missing resolver files (except for app module)
-    if (moduleName !== 'app' && resolverFiles.length === 0) {
-      this.addWarning(
-        moduleName,
-        'missing-resolver',
-        `Module "${moduleName}" is missing resolver files`,
-      )
-    }
+    // Note: We don't warn about missing resolver files anymore
+    // It's valid to have utility modules without resolvers, controllers, or services
   }
 
   private async validateServiceFiles(moduleName: string, serviceFiles: string[]) {
@@ -716,8 +710,13 @@ export class GraphQLASTValidator {
   }
 
   private async validateModuleNaming(moduleName: string, moduleFiles: string[], allFiles: string[]) {
-    // Check if module file exists
-    if (moduleFiles.length === 0 && moduleName !== 'app') {
+    // Check if this module has resolvers or controllers (files that would require a .module.ts)
+    const hasResolverOrController = allFiles.some(
+      file => file.endsWith('.resolver.ts') || file.endsWith('.controller.ts'),
+    )
+
+    // Check if module file exists - only required if module has resolvers or controllers
+    if (moduleFiles.length === 0 && hasResolverOrController && moduleName !== 'app') {
       this.addWarning(
         moduleName,
         'missing-module',

@@ -342,7 +342,7 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when module has wrong file name', async () => {
-      const mockFiles = ['src/user/module.ts']
+      const mockFiles = ['src/user/module.ts', 'src/user/user.resolver.ts']
 
       ;(glob as jest.Mock).mockResolvedValue(mockFiles)
       ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
@@ -502,7 +502,7 @@ describe('GraphQLValidator', () => {
       expect(emptyWarning?.message).toContain('does not contain any Query, Mutation, Subscription')
     })
 
-    it('should warn when module is missing resolver files', async () => {
+    it('should not warn when utility module is missing resolver files', async () => {
       const mockFiles = ['src/user/user.module.ts', 'src/user/user.service.ts']
 
       ;(glob as jest.Mock).mockResolvedValue(mockFiles)
@@ -511,8 +511,7 @@ describe('GraphQLValidator', () => {
       const result = await validator.validate()
 
       const missingResolver = result.warnings.find(w => w.rule === 'missing-resolver')
-      expect(missingResolver).toBeDefined()
-      expect(missingResolver?.message).toContain('missing resolver files')
+      expect(missingResolver).toBeUndefined()
     })
   })
 
