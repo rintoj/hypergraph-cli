@@ -40,6 +40,11 @@ hypergraph graphql validate --path ./src --strict --json
 
 The validator enforces the following rules for GraphQL projects:
 
+**Special Exception**: The `app` module (typically `src/app.module.ts` in NestJS projects) is treated as a special case:
+- It doesn't need to follow the `<module>/<module>.module.ts` naming convention
+- It doesn't require a resolver file
+- It can be placed directly in the `src` directory
+
 ### 1. Input Files (.input.ts)
 - **Rule**: All GraphQL input types must be defined in files ending with `.input.ts`
 - **Example**: `user.input.ts`, `create-product.input.ts`
@@ -115,10 +120,12 @@ export class UserProfile {
 ### 4. Module Naming Convention
 - **Rule**: Module files must follow the pattern `<module-name>/<module-name>.module.ts`
 - **Example**: `user/user.module.ts`, `auth/auth.module.ts`
+- **Exception**: `app.module.ts` is allowed at the root (`src/app.module.ts`) and doesn't require a resolver
 
 ```typescript
 // ✅ Correct structure:
 src/
+  app.module.ts       // Root module (EXCEPTION: allowed at src root)
   user/
     user.module.ts    // Module definition
     user.service.ts   // Service
@@ -137,6 +144,7 @@ src/
 ### 5. Resolver Files (.resolver.ts)
 - **Rule**: All GraphQL resolvers must be in files ending with `.resolver.ts`
 - **Example**: `user.resolver.ts`, `auth.resolver.ts`
+- **Exception**: The `app` module doesn't require a resolver file
 - **Detects**: `@Resolver()` decorator
 
 ```typescript
@@ -375,12 +383,15 @@ The validator automatically detects modules based on:
 1. **Directory structure**: Looks for common patterns like `src/modules/[module-name]` or `src/[module-name]`
 2. **File naming**: Extracts module names from files like `user.service.ts`, `auth.resolver.ts`
 3. **Nested modules**: Supports nested module structures
+4. **Special handling**: The `app` module is treated as a special case (root module)
 
 ### Example Module Structures
 
 ```
-# Standard structure
+# Standard NestJS structure
 src/
+  app.module.ts        # Root module (special case - no resolver required)
+  app.service.ts       # Optional app service
   modules/
     user/
       user.module.ts
@@ -389,6 +400,7 @@ src/
 
 # Flat structure
 src/
+  app.module.ts        # Root module
   user/
     user.module.ts
     user.service.ts
@@ -396,6 +408,7 @@ src/
 
 # Domain-driven structure
 src/
+  app.module.ts        # Root module
   domains/
     user/
       infrastructure/

@@ -100,5 +100,5 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
-  "exclude": ["build", "dist", "test-graphql-project"]
+  "exclude": ["build", "dist", "test-graphql-project", "test-hgraph", "test-app", "**/*.spec.ts", "**/*.test.ts"]
 }

@@ -22,6 +22,9 @@ async function run({ path: targetPath, fix, strict, json }: Props) {
     checkResolverFiles: true,
     checkServiceFiles: true,
     checkResolverEndpoints: true,
+    checkHgraphStorage: true,
+    checkEntityFiles: true,
+    checkRepositoryFiles: true,
   }
 
   if (!json) {
@@ -60,8 +63,17 @@ function displayResults(result: ValidationResult, strict: boolean) {
   }
 
   console.log(chalk.white(`📄 Files checked: ${result.checkedFiles}`))
-  console.log(chalk.red(`❌ Errors: ${result.errors.length}`))
-  console.log(chalk.yellow(`⚠️  Warnings: ${result.warnings.length}`))
+
+  // Only show error count if there are errors
+  if (result.errors.length > 0) {
+    console.log(chalk.red(`❌ Errors: ${result.errors.length}`))
+  }
+
+  // Only show warning count if there are warnings
+  if (result.warnings.length > 0) {
+    console.log(chalk.yellow(`⚠️  Warnings: ${result.warnings.length}`))
+  }
+
   console.log()
 
   // Display errors
@@ -102,6 +114,10 @@ function displayResults(result: ValidationResult, strict: boolean) {
     '✓ All resolvers must be in .resolver.ts files',
     '✓ All services must be in .service.ts files',
     '✓ All GraphQL endpoints must be in resolver files',
+    '✓ @hgraph/storage: Entities use @Entity, @PrimaryColumn, @Column decorators',
+    '✓ @hgraph/storage: Repositories extend proper base classes',
+    '✓ @hgraph/storage: Services use @InjectRepo for dependency injection',
+    '✓ @hgraph/storage: Modules import StorageModule correctly',
   ]
 
   ruleDescriptions.forEach(rule => {
