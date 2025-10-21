@@ -36,6 +36,7 @@
     "glob": "^10.3.10",
     "gql-hook-codegen": "^1.0.21",
     "graphql": "^16.7.1",
+    "ignore": "^7.0.5",
     "js-yaml": "^4.1.0",
     "node-fetch": "2.6.6",
     "open": "^9.1.0",

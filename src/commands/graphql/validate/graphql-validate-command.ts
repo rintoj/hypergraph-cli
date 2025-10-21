@@ -1,13 +1,47 @@
 import { command, input } from 'clifer'
 import * as path from 'path'
 import chalk from 'chalk'
-import { GraphQLValidator, ValidationRules, ValidationResult } from './graphql-validator'
+// import { GraphQLValidator, ValidationRules, ValidationResult } from './graphql-validator'
+import { GraphQLASTValidator, ValidationRules, ValidationResult } from './graphql-ast-validator'
 
 interface Props {
   path?: string
   fix?: boolean
   strict?: boolean
   json?: boolean
+}
+
+// Syntax highlighting for TypeScript code
+function highlightTypeScriptSyntax(code: string): string {
+  // Keywords
+  const keywords = /\b(import|export|class|interface|function|async|await|const|let|var|if|else|for|while|return|extends|implements|public|private|protected|readonly|static|new|this|super|typeof|instanceof|in|of|as|from)\b/g
+
+  // Decorators
+  const decorators = /@\w+/g
+
+  // Strings
+  const strings = /(['"`])(?:(?=(\\?))\2.)*?\1/g
+
+  // Comments
+  const comments = /\/\/.*$/gm
+
+  // Numbers
+  const numbers = /\b\d+\b/g
+
+  // Types and classes
+  const types = /\b[A-Z]\w*\b/g
+
+  let highlighted = code
+
+  // Apply highlighting in order of precedence
+  highlighted = highlighted.replace(strings, chalk.green('$&'))
+  highlighted = highlighted.replace(comments, chalk.gray('$&'))
+  highlighted = highlighted.replace(decorators, chalk.magenta('$&'))
+  highlighted = highlighted.replace(keywords, chalk.blue('$&'))
+  highlighted = highlighted.replace(types, chalk.yellow('$&'))
+  highlighted = highlighted.replace(numbers, chalk.cyan('$&'))
+
+  return highlighted
 }
 
 async function run({ path: targetPath, fix, strict, json }: Props) {
@@ -27,13 +61,7 @@ async function run({ path: targetPath, fix, strict, json }: Props) {
     checkRepositoryFiles: true,
   }
 
-  if (!json) {
-    console.log(chalk.blue('🔍 Starting GraphQL structure validation...\n'))
-    console.log(chalk.gray(`Validating: ${rootPath}`))
-    console.log(chalk.gray(`Mode: ${strict ? 'strict' : 'normal'}\n`))
-  }
-
-  const validator = new GraphQLValidator(rootPath, rules)
+  const validator = new GraphQLASTValidator(rootPath, rules)
   const result: ValidationResult = await validator.validate()
 
   if (json) {
@@ -50,40 +78,42 @@ async function run({ path: targetPath, fix, strict, json }: Props) {
 }
 
 function displayResults(result: ValidationResult, strict: boolean) {
-  console.log(chalk.blue('━'.repeat(60)))
-  console.log(chalk.blue.bold('\n📊 Validation Summary\n'))
-
-  // Display module information
-  if (result.modules.length > 0) {
-    console.log(chalk.white(`📦 Modules found: ${result.modules.length}`))
-    result.modules.forEach(module => {
-      console.log(chalk.gray(`   • ${module}`))
-    })
-    console.log()
+  // Summary line
+  if (result.errors.length > 0 || result.warnings.length > 0) {
+    const parts = []
+    if (result.errors.length > 0) {
+      parts.push(chalk.red(`${result.errors.length} error${result.errors.length === 1 ? '' : 's'}`))
+    }
+    if (result.warnings.length > 0) {
+      parts.push(chalk.yellow(`${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'}`))
+    }
+    console.log(`\nFound ${parts.join(' and ')}\n`)
   }
-
-  console.log(chalk.white(`📄 Files checked: ${result.checkedFiles}`))
-
-  // Only show error count if there are errors
-  if (result.errors.length > 0) {
-    console.log(chalk.red(`❌ Errors: ${result.errors.length}`))
-  }
-
-  // Only show warning count if there are warnings
-  if (result.warnings.length > 0) {
-    console.log(chalk.yellow(`⚠️  Warnings: ${result.warnings.length}`))
-  }
-
-  console.log()
 
   // Display errors
   if (result.errors.length > 0) {
-    console.log(chalk.red.bold('❌ Errors:\n'))
     result.errors.forEach((error, index) => {
-      console.log(chalk.red(`${index + 1}. [${error.rule}] ${error.file}`))
-      console.log(chalk.red(`   ${error.message}`))
-      if (error.line) {
-        console.log(chalk.gray(`   Line: ${error.line}`))
+      // File and location
+      console.log(chalk.cyan.underline(`${error.file}${error.line ? ':' + error.line : ''}`))
+
+      // Error message with rule
+      console.log(`  ${chalk.red('✖')} ${error.message} ${chalk.gray(`[${error.rule}]`)}`)
+
+      // Code snippet with syntax highlighting
+      if (error.snippet) {
+        console.log()
+        error.snippet.split('\n').forEach(line => {
+          const lineMatch = line.match(/^([>|\s])\s*(\d+)\s\|\s(.*)$/)
+          if (lineMatch) {
+            const [, indicator, lineNum, code] = lineMatch
+            const highlightedCode = highlightTypeScriptSyntax(code)
+            if (indicator === '>') {
+              console.log(chalk.red(`${indicator}${lineNum} │`) + ' ' + highlightedCode)
+            } else {
+              console.log(chalk.gray(` ${lineNum} │`) + ' ' + highlightedCode)
+            }
+          }
+        })
       }
       console.log()
     })
@@ -91,50 +121,43 @@ function displayResults(result: ValidationResult, strict: boolean) {
 
   // Display warnings
   if (result.warnings.length > 0) {
-    console.log(chalk.yellow.bold('⚠️  Warnings:\n'))
     result.warnings.forEach((warning, index) => {
-      console.log(chalk.yellow(`${index + 1}. [${warning.rule}] ${warning.file}`))
-      console.log(chalk.yellow(`   ${warning.message}`))
-      if (warning.line) {
-        console.log(chalk.gray(`   Line: ${warning.line}`))
+      // File and location
+      console.log(chalk.cyan.underline(`${warning.file}${warning.line ? ':' + warning.line : ''}`))
+
+      // Warning message with rule
+      console.log(`  ${chalk.yellow('⚠')} ${warning.message} ${chalk.gray(`[${warning.rule}]`)}`)
+
+      // Code snippet with syntax highlighting
+      if (warning.snippet) {
+        console.log()
+        warning.snippet.split('\n').forEach(line => {
+          const lineMatch = line.match(/^([>|\s])\s*(\d+)\s\|\s(.*)$/)
+          if (lineMatch) {
+            const [, indicator, lineNum, code] = lineMatch
+            const highlightedCode = highlightTypeScriptSyntax(code)
+            if (indicator === '>') {
+              console.log(chalk.yellow(`${indicator}${lineNum} │`) + ' ' + highlightedCode)
+            } else {
+              console.log(chalk.gray(` ${lineNum} │`) + ' ' + highlightedCode)
+            }
+          }
+        })
       }
       console.log()
     })
   }
 
-  // Display validation rules
-  console.log(chalk.blue('━'.repeat(60)))
-  console.log(chalk.blue.bold('\n📋 Validation Rules Applied:\n'))
-
-  const ruleDescriptions = [
-    '✓ All GraphQL inputs must be in .input.ts files',
-    '✓ All responses must be in .response.ts files',
-    '✓ All models (TypeORM & GraphQL) must be in .model.ts files',
-    '✓ Module files must follow naming convention: <module>/<module>.module.ts',
-    '✓ All resolvers must be in .resolver.ts files',
-    '✓ All services must be in .service.ts files',
-    '✓ All GraphQL endpoints must be in resolver files',
-    '✓ @hgraph/storage: Entities use @Entity, @PrimaryColumn, @Column decorators',
-    '✓ @hgraph/storage: Repositories extend proper base classes',
-    '✓ @hgraph/storage: Services use @InjectRepo for dependency injection',
-    '✓ @hgraph/storage: Modules import StorageModule correctly',
-  ]
-
-  ruleDescriptions.forEach(rule => {
-    console.log(chalk.gray(rule))
-  })
-
-  console.log(chalk.blue('\n' + '━'.repeat(60)))
 
   // Final status
-  if (result.valid) {
-    console.log(chalk.green.bold('\n✅ All validations passed!\n'))
-  } else if (result.errors.length === 0 && !strict) {
-    console.log(chalk.yellow.bold('\n⚠️  Validation completed with warnings.\n'))
-    console.log(chalk.gray('Use --strict flag to treat warnings as errors.\n'))
+  if (result.errors.length === 0 && result.warnings.length === 0) {
+    console.log(chalk.green('\n✓ All checks passed\n'))
+  } else if (result.errors.length === 0 && result.warnings.length > 0 && !strict) {
+    console.log(chalk.yellow('\n⚠ Validation completed with warnings'))
+    console.log(chalk.gray('  Use --strict to treat warnings as errors\n'))
   } else {
-    console.log(chalk.red.bold('\n❌ Validation failed!\n'))
-    console.log(chalk.gray('Please fix the errors listed above.\n'))
+    console.log(chalk.red('\n✖ Validation failed'))
+    console.log(chalk.gray('  Fix the issues above to pass validation\n'))
   }
 }
 
