@@ -226,6 +226,18 @@ export class GraphQLASTValidator {
       await this.validateInputFiles(moduleName, moduleFiles.inputs)
     }
 
+    if (this.rules.checkResolverFiles) {
+      await this.validateResolverFiles(moduleName, moduleFiles.resolvers)
+    }
+
+    if (this.rules.checkServiceFiles) {
+      await this.validateServiceFiles(moduleName, moduleFiles.services)
+    }
+
+    if (this.rules.checkModuleNaming) {
+      await this.validateModuleNaming(moduleName, moduleFiles.modules, files)
+    }
+
     if (this.rules.checkResolverEndpoints) {
       await this.validateResolverEndpoints(moduleName, moduleFiles.resolvers, files)
     }
@@ -301,13 +313,16 @@ export class GraphQLASTValidator {
       // Skip .response.ts files - they can have @ObjectType
       if (file.endsWith('.response.ts')) continue
 
+      // Skip .input.ts files - they're for input types
+      if (file.endsWith('.input.ts')) continue
+
       // Skip .model.ts files - they're the correct place
       if (file.endsWith('.model.ts')) continue
 
       const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
       if (!sourceFile) continue
 
-      // Check for @Entity or @ObjectType decorators in wrong files
+      // Check for @Entity, @ObjectType, @InputType decorators in wrong files
       this.visitNode(sourceFile, node => {
         if (ts.isClassDeclaration(node)) {
           const decorators = this.getDecorators(node)
@@ -332,6 +347,48 @@ export class GraphQLASTValidator {
                 `GraphQL object types (non-response) should be in .model.ts files, found in ${path.basename(
                   file,
                 )}`,
+                line,
+              )
+            }
+
+            if (decoratorName === 'InputType') {
+              const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+              this.addError(
+                file,
+                'input-location',
+                `GraphQL input types should be in .input.ts files, found in ${path.basename(file)}`,
+                line,
+              )
+            }
+          }
+        }
+      })
+    }
+
+    // Check for response types in wrong files
+    for (const file of allFiles) {
+      // Skip .response.ts files - they're the correct place
+      if (file.endsWith('.response.ts')) continue
+
+      // Skip .model.ts files - they can have @ObjectType for entities
+      if (file.endsWith('.model.ts')) continue
+
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      this.visitNode(sourceFile, node => {
+        if (ts.isClassDeclaration(node)) {
+          const decorators = this.getDecorators(node)
+          for (const decorator of decorators) {
+            const decoratorName = this.getDecoratorName(decorator)
+
+            // Check if this is a response class with @ObjectType
+            if (decoratorName === 'ObjectType' && this.isResponseClass(node)) {
+              const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+              this.addError(
+                file,
+                'response-location',
+                `GraphQL response types should be in .response.ts files, found in ${path.basename(file)}`,
                 line,
               )
             }
@@ -567,6 +624,129 @@ export class GraphQLASTValidator {
           }
         }
       })
+    }
+  }
+
+  private async validateResolverFiles(moduleName: string, resolverFiles: string[]) {
+    if (!this.program) return
+
+    for (const file of resolverFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      let hasResolverDecorator = false
+      let hasAnyOperation = false
+
+      this.visitNode(sourceFile, node => {
+        if (ts.isClassDeclaration(node)) {
+          const decorators = this.getDecorators(node)
+          if (decorators.some(d => this.getDecoratorName(d) === 'Resolver')) {
+            hasResolverDecorator = true
+          }
+        }
+
+        if (ts.isMethodDeclaration(node)) {
+          const decorators = this.getDecorators(node)
+          for (const decorator of decorators) {
+            const decoratorName = this.getDecoratorName(decorator)
+            if (['Query', 'Mutation', 'Subscription', 'ResolveField', 'FieldResolver'].includes(decoratorName)) {
+              hasAnyOperation = true
+            }
+          }
+        }
+      })
+
+      if (!hasResolverDecorator) {
+        this.addError(
+          file,
+          'resolver-class',
+          'Resolver files should contain a class decorated with @Resolver()',
+        )
+      }
+
+      if (hasResolverDecorator && !hasAnyOperation) {
+        this.addWarning(
+          file,
+          'empty-resolver',
+          'Resolver file does not contain any Query, Mutation, Subscription, or Field resolvers',
+        )
+      }
+    }
+
+    // Check if module is missing resolver files (except for app module)
+    if (moduleName !== 'app' && resolverFiles.length === 0) {
+      this.addWarning(
+        moduleName,
+        'missing-resolver',
+        `Module "${moduleName}" is missing resolver files`,
+      )
+    }
+  }
+
+  private async validateServiceFiles(moduleName: string, serviceFiles: string[]) {
+    if (!this.program) return
+
+    for (const file of serviceFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      let hasServiceClass = false
+
+      this.visitNode(sourceFile, node => {
+        if (ts.isClassDeclaration(node)) {
+          const className = node.name?.text || ''
+          const decorators = this.getDecorators(node)
+          const hasInjectableDecorator = decorators.some(d => this.getDecoratorName(d) === 'Injectable')
+
+          // Consider it a service if it has @Injectable or class name ends with Service
+          if (hasInjectableDecorator || className.endsWith('Service')) {
+            hasServiceClass = true
+          }
+        }
+      })
+
+      if (!hasServiceClass) {
+        this.addError(
+          file,
+          'service-class',
+          'Service files should contain a class decorated with @Injectable() or a class name ending with Service',
+        )
+      }
+    }
+  }
+
+  private async validateModuleNaming(moduleName: string, moduleFiles: string[], allFiles: string[]) {
+    // Check if module file exists
+    if (moduleFiles.length === 0 && moduleName !== 'app') {
+      this.addWarning(
+        moduleName,
+        'missing-module',
+        `Module "${moduleName}" is missing a .module.ts file`,
+      )
+    }
+
+    // Check module file naming and path
+    for (const file of moduleFiles) {
+      const fileName = path.basename(file, '.ts')
+      const expectedFileName = `${moduleName}.module`
+
+      if (fileName !== expectedFileName && moduleName !== 'app') {
+        this.addWarning(
+          file,
+          'module-naming',
+          `Module file should be named "${expectedFileName}.ts", found "${fileName}.ts"`,
+        )
+      }
+
+      // Check if module is in correct directory structure
+      const expectedPath = `${moduleName}/${moduleName}.module.ts`
+      if (!file.endsWith(expectedPath) && moduleName !== 'app') {
+        this.addWarning(
+          file,
+          'module-path',
+          `Module file should be at path ending with "${expectedPath}", found at "${file}"`,
+        )
+      }
     }
   }
 
