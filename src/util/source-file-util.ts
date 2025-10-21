@@ -61,7 +61,9 @@ export function writeSourceFiles(root: string, sourceFiles: Array<SourceFileType
 
       // update or create file
       await ensureDir(dir)
-      console.log(`${fileExists ? chalk.yellow('[UPDATE]') : chalk.green('[CREATE]')} ${sourceFile.fileName}`)
+      console.log(
+        `${fileExists ? chalk.yellow('[UPDATE]') : chalk.green('[CREATE]')} ${sourceFile.fileName}`,
+      )
       const extension = extname(file)
       const fileContent = sourceFile.content.join('\n')
       const content = extension === '.ts' ? await prettify(fileContent) : fileContent

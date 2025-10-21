@@ -37,7 +37,10 @@ export class GraphQLValidator {
   private checkedFiles = 0
   private modules = new Set<string>()
 
-  constructor(private rootPath: string, private rules: ValidationRules) {}
+  constructor(
+    private rootPath: string,
+    private rules: ValidationRules,
+  ) {}
 
   async validate(): Promise<ValidationResult> {
     this.errors = []
@@ -216,7 +219,7 @@ export class GraphQLValidator {
         moduleFiles.repositories,
         moduleFiles.services,
         moduleFiles.modules,
-        files
+        files,
       )
     }
   }
@@ -230,14 +233,18 @@ export class GraphQLValidator {
           this.addError(
             file,
             'input-location',
-            `GraphQL input types should be in .input.ts files, found in ${path.basename(file)}`
+            `GraphQL input types should be in .input.ts files, found in ${path.basename(file)}`,
           )
         }
       }
     }
   }
 
-  private async validateResponseFiles(moduleName: string, responseFiles: string[], allFiles: string[]) {
+  private async validateResponseFiles(
+    moduleName: string,
+    responseFiles: string[],
+    allFiles: string[],
+  ) {
     // Check if there are any GraphQL response types defined elsewhere
     for (const file of allFiles) {
       if (!file.endsWith('.response.ts')) {
@@ -246,7 +253,9 @@ export class GraphQLValidator {
           this.addError(
             file,
             'response-location',
-            `GraphQL response types should be in .response.ts files, found in ${path.basename(file)}`
+            `GraphQL response types should be in .response.ts files, found in ${path.basename(
+              file,
+            )}`,
           )
         }
       }
@@ -260,9 +269,7 @@ export class GraphQLValidator {
     // Check if there are any TypeORM entities or GraphQL object types defined elsewhere
     for (const file of allFiles) {
       // When using @hgraph/storage, .entity.ts files are allowed for entities
-      const allowedFiles = usesHgraphStorage
-        ? ['.model.ts', '.entity.ts']
-        : ['.model.ts']
+      const allowedFiles = usesHgraphStorage ? ['.model.ts', '.entity.ts'] : ['.model.ts']
 
       const isAllowedFile = allowedFiles.some(ext => file.endsWith(ext))
 
@@ -277,7 +284,9 @@ export class GraphQLValidator {
             this.addError(
               file,
               'model-location',
-              `GraphQL object types should be in .model.ts or .entity.ts files, found in ${path.basename(file)}`
+              `GraphQL object types should be in .model.ts or .entity.ts files, found in ${path.basename(
+                file,
+              )}`,
             )
           }
         } else {
@@ -286,7 +295,9 @@ export class GraphQLValidator {
             this.addError(
               file,
               'model-location',
-              `TypeORM entities and GraphQL object types should be in .model.ts files, found in ${path.basename(file)}`
+              `TypeORM entities and GraphQL object types should be in .model.ts files, found in ${path.basename(
+                file,
+              )}`,
             )
           }
         }
@@ -305,7 +316,7 @@ export class GraphQLValidator {
       this.addWarning(
         moduleName,
         'missing-module',
-        `Module ${moduleName} is missing a .module.ts file`
+        `Module ${moduleName} is missing a .module.ts file`,
       )
       return
     }
@@ -318,7 +329,7 @@ export class GraphQLValidator {
         this.addError(
           file,
           'module-naming',
-          `Module file should be named ${expectedName}, found ${fileName}`
+          `Module file should be named ${expectedName}, found ${fileName}`,
         )
       }
 
@@ -328,7 +339,7 @@ export class GraphQLValidator {
         this.addWarning(
           file,
           'module-path',
-          `Module file should be at path ending with ${expectedPath}`
+          `Module file should be at path ending with ${expectedPath}`,
         )
       }
     }
@@ -344,7 +355,7 @@ export class GraphQLValidator {
       this.addWarning(
         moduleName,
         'missing-resolver',
-        `Module ${moduleName} is missing resolver files`
+        `Module ${moduleName} is missing resolver files`,
       )
     }
 
@@ -356,7 +367,7 @@ export class GraphQLValidator {
         this.addError(
           file,
           'resolver-class',
-          'Resolver file should contain a class decorated with @Resolver()'
+          'Resolver file should contain a class decorated with @Resolver()',
         )
       }
     }
@@ -371,7 +382,7 @@ export class GraphQLValidator {
         this.addError(
           file,
           'service-class',
-          'Service file should contain a class decorated with @Injectable() or similar'
+          'Service file should contain a class decorated with @Injectable() or similar',
         )
       }
     }
@@ -391,7 +402,7 @@ export class GraphQLValidator {
         this.addWarning(
           file,
           'empty-resolver',
-          'Resolver file does not contain any Query, Mutation, Subscription, or Field resolvers'
+          'Resolver file does not contain any Query, Mutation, Subscription, or Field resolvers',
         )
       }
     }
@@ -399,18 +410,29 @@ export class GraphQLValidator {
     // Check if GraphQL operations exist outside of resolver files
     const nonResolverFiles = await glob('**/*.ts', {
       cwd: this.rootPath,
-      ignore: ['node_modules/**', 'dist/**', 'build/**', '*.spec.ts', '*.test.ts', '**/*.resolver.ts'],
+      ignore: [
+        'node_modules/**',
+        'dist/**',
+        'build/**',
+        '*.spec.ts',
+        '*.test.ts',
+        '**/*.resolver.ts',
+      ],
     })
 
     for (const file of nonResolverFiles) {
       const content = await this.readFile(file)
 
-      if (this.containsQuery(content) || this.containsMutation(content) ||
-          this.containsSubscription(content) || this.containsFieldResolver(content)) {
+      if (
+        this.containsQuery(content) ||
+        this.containsMutation(content) ||
+        this.containsSubscription(content) ||
+        this.containsFieldResolver(content)
+      ) {
         this.addError(
           file,
           'resolver-location',
-          'GraphQL operations (Query, Mutation, Subscription, Field resolvers) should only be in .resolver.ts files'
+          'GraphQL operations (Query, Mutation, Subscription, Field resolvers) should only be in .resolver.ts files',
         )
       }
     }
@@ -420,7 +442,7 @@ export class GraphQLValidator {
     moduleName: string,
     entityFiles: string[],
     modelFiles: string[],
-    allFiles: string[]
+    allFiles: string[],
   ) {
     // Check if using @hgraph/storage patterns
     const usesHgraphStorage = await this.detectHgraphStorageUsage(allFiles)
@@ -432,7 +454,7 @@ export class GraphQLValidator {
           this.addWarning(
             file,
             'entity-naming',
-            'When using @hgraph/storage, consider using .model.ts instead of .entity.ts for TypeORM entities'
+            'When using @hgraph/storage, consider using .model.ts instead of .entity.ts for TypeORM entities',
           )
         }
       }
@@ -445,7 +467,7 @@ export class GraphQLValidator {
             this.addError(
               file,
               'entity-location',
-              'TypeORM @Entity decorators should be in .model.ts or .entity.ts files when using @hgraph/storage'
+              'TypeORM @Entity decorators should be in .model.ts or .entity.ts files when using @hgraph/storage',
             )
           }
         }
@@ -460,7 +482,7 @@ export class GraphQLValidator {
           this.addError(
             file,
             'missing-entity-decorator',
-            'Entity file must have @Entity() decorator'
+            'Entity file must have @Entity() decorator',
           )
         }
 
@@ -469,7 +491,7 @@ export class GraphQLValidator {
           this.addError(
             file,
             'missing-primary-column',
-            'Entity must have @PrimaryColumn() or @PrimaryGeneratedColumn() decorator'
+            'Entity must have @PrimaryColumn() or @PrimaryGeneratedColumn() decorator',
           )
         }
 
@@ -478,7 +500,7 @@ export class GraphQLValidator {
           this.addWarning(
             file,
             'missing-column-decorator',
-            'Entity properties should have @Column() decorator for persistence'
+            'Entity properties should have @Column() decorator for persistence',
           )
         }
 
@@ -487,7 +509,7 @@ export class GraphQLValidator {
           this.addWarning(
             file,
             'nullable-configuration',
-            'Optional properties should have @Column({ nullable: true }) configuration'
+            'Optional properties should have @Column({ nullable: true }) configuration',
           )
         }
       }
@@ -497,7 +519,7 @@ export class GraphQLValidator {
   private async validateRepositoryFiles(
     moduleName: string,
     repositoryFiles: string[],
-    allFiles: string[]
+    allFiles: string[],
   ) {
     const usesHgraphStorage = await this.detectHgraphStorageUsage(allFiles)
 
@@ -513,7 +535,7 @@ export class GraphQLValidator {
           this.addError(
             file,
             'repository-location',
-            'Repository classes should be in .repository.ts files'
+            'Repository classes should be in .repository.ts files',
           )
         }
       }
@@ -528,7 +550,7 @@ export class GraphQLValidator {
         this.addError(
           file,
           'repository-inheritance',
-          'Repository class should extend Repository<T>, RepositoryWithIdCache<T>, or FirestoreRepository<T> from @hgraph/storage'
+          'Repository class should extend Repository<T>, RepositoryWithIdCache<T>, or FirestoreRepository<T> from @hgraph/storage',
         )
       }
 
@@ -537,7 +559,7 @@ export class GraphQLValidator {
         this.addWarning(
           file,
           'repository-constructor',
-          'Repository should have constructor calling super() with entity class'
+          'Repository should have constructor calling super() with entity class',
         )
       }
 
@@ -546,7 +568,7 @@ export class GraphQLValidator {
         this.addWarning(
           file,
           'repository-logic',
-          'Business logic should be in service files, not repositories. Repositories should only handle data access'
+          'Business logic should be in service files, not repositories. Repositories should only handle data access',
         )
       }
 
@@ -555,7 +577,7 @@ export class GraphQLValidator {
         this.addWarning(
           file,
           'repository-caching',
-          'Consider using RepositoryWithIdCache or @WithCache decorator for GraphQL applications'
+          'Consider using RepositoryWithIdCache or @WithCache decorator for GraphQL applications',
         )
       }
     }
@@ -567,7 +589,7 @@ export class GraphQLValidator {
     repositoryFiles: string[],
     serviceFiles: string[],
     moduleFiles: string[],
-    allFiles: string[]
+    allFiles: string[],
   ) {
     const usesHgraphStorage = await this.detectHgraphStorageUsage(allFiles)
 
@@ -588,7 +610,7 @@ export class GraphQLValidator {
           this.addError(
             file,
             'hardcoded-credentials',
-            'Database credentials should use environment variables, not hardcoded values'
+            'Database credentials should use environment variables, not hardcoded values',
           )
         }
       }
@@ -596,14 +618,14 @@ export class GraphQLValidator {
       // Special check for app.module.ts - should have forRoot when using @hgraph/storage
       if (file.includes('app.module') && !this.hasStorageModuleForRoot(content)) {
         // Only warn if this is truly the root app module and entities exist in the project
-        const hasEntitiesInProject = entityFiles.length > 0 ||
-                                     (await this.hasAnyEntitiesInProject(allFiles))
+        const hasEntitiesInProject =
+          entityFiles.length > 0 || (await this.hasAnyEntitiesInProject(allFiles))
 
         if (hasEntitiesInProject) {
           this.addWarning(
             file,
             'storage-module-root',
-            'App module should import StorageModule.forRoot() when using @hgraph/storage with entities'
+            'App module should import StorageModule.forRoot() when using @hgraph/storage with entities',
           )
         }
       }
@@ -614,7 +636,7 @@ export class GraphQLValidator {
           this.addWarning(
             file,
             'storage-module-feature',
-            `Module should import StorageModule.forFeature([...entities]) when using @hgraph/storage`
+            `Module should import StorageModule.forFeature([...entities]) when using @hgraph/storage`,
           )
         }
       }
@@ -629,7 +651,7 @@ export class GraphQLValidator {
         this.addError(
           file,
           'missing-inject-repo',
-          'Use @InjectRepo(Entity) decorator to inject repositories in NestJS services'
+          'Use @InjectRepo(Entity) decorator to inject repositories in NestJS services',
         )
       }
 
@@ -639,7 +661,7 @@ export class GraphQLValidator {
           this.addWarning(
             file,
             'repository-typing',
-            'Repository should be typed with generic parameter: Repository<Entity>'
+            'Repository should be typed with generic parameter: Repository<Entity>',
           )
         }
       }
@@ -649,7 +671,7 @@ export class GraphQLValidator {
         this.addError(
           file,
           'direct-db-access',
-          'Services should use injected repositories, not direct database access'
+          'Services should use injected repositories, not direct database access',
         )
       }
 
@@ -659,7 +681,7 @@ export class GraphQLValidator {
           this.addWarning(
             file,
             'query-builder-pattern',
-            'Use repository query builder methods: whereEqualTo(), orderByAscending(), limit(), etc.'
+            'Use repository query builder methods: whereEqualTo(), orderByAscending(), limit(), etc.',
           )
         }
       }
@@ -674,7 +696,7 @@ export class GraphQLValidator {
           this.addWarning(
             file,
             'pagination-pattern',
-            'Use .next(token).limit(pageSize) pattern for pagination with @hgraph/storage'
+            'Use .next(token).limit(pageSize) pattern for pagination with @hgraph/storage',
           )
         }
       }
@@ -689,7 +711,7 @@ export class GraphQLValidator {
         this.addWarning(
           file,
           'n-plus-one-risk',
-          'GraphQL field resolvers may cause N+1 queries. Consider using RepositoryWithIdCache'
+          'GraphQL field resolvers may cause N+1 queries. Consider using RepositoryWithIdCache',
         )
       }
     }
@@ -699,10 +721,12 @@ export class GraphQLValidator {
   private async detectHgraphStorageUsage(files: string[]): Promise<boolean> {
     for (const file of files) {
       const content = await this.readFile(file)
-      if (content.includes('@hgraph/storage') ||
-          content.includes('StorageModule') ||
-          content.includes('Repository<') ||
-          content.includes('@InjectRepo')) {
+      if (
+        content.includes('@hgraph/storage') ||
+        content.includes('StorageModule') ||
+        content.includes('Repository<') ||
+        content.includes('@InjectRepo')
+      ) {
         return true
       }
     }
@@ -735,7 +759,9 @@ export class GraphQLValidator {
   }
 
   private extendsRepository(content: string): boolean {
-    return /extends\s+(Repository|RepositoryWithIdCache|FirestoreRepository|FirestoreRepositoryWithIdCache)</.test(content)
+    return /extends\s+(Repository|RepositoryWithIdCache|FirestoreRepository|FirestoreRepositoryWithIdCache)</.test(
+      content,
+    )
   }
 
   private hasProperRepositoryConstructor(content: string): boolean {
@@ -745,12 +771,12 @@ export class GraphQLValidator {
   private containsBusinessLogic(content: string): boolean {
     // Check for complex logic patterns in repository
     const businessLogicPatterns = [
-      /if\s*\([^)]+\)\s*{[\s\S]+}/,  // Complex conditionals
-      /for\s*\(/,  // Loops
-      /while\s*\(/,  // While loops
-      /\.map\s*\(/,  // Array transformations
-      /\.filter\s*\(/,  // Filtering logic
-      /throw\s+new\s+\w+Error/,  // Business exceptions
+      /if\s*\([^)]+\)\s*{[\s\S]+}/, // Complex conditionals
+      /for\s*\(/, // Loops
+      /while\s*\(/, // While loops
+      /\.map\s*\(/, // Array transformations
+      /\.filter\s*\(/, // Filtering logic
+      /throw\s+new\s+\w+Error/, // Business exceptions
     ]
 
     return businessLogicPatterns.some(pattern => pattern.test(content))
@@ -758,7 +784,11 @@ export class GraphQLValidator {
 
   private shouldUseCaching(content: string): boolean {
     // Check if the repository is likely used with GraphQL
-    return content.includes('GraphQL') || content.includes('resolver') || content.includes('FieldResolver')
+    return (
+      content.includes('GraphQL') ||
+      content.includes('resolver') ||
+      content.includes('FieldResolver')
+    )
   }
 
   private hasCachingDecorator(content: string): boolean {
@@ -771,9 +801,11 @@ export class GraphQLValidator {
 
   private hasHardcodedCredentials(content: string): boolean {
     // Check for hardcoded database URLs or passwords
-    return /url\s*:\s*['"`]postgres:\/\//.test(content) ||
-           /password\s*:\s*['"`]\w+['"`]/.test(content) ||
-           /host\s*:\s*['"`][\w.]+['"`]/.test(content)
+    return (
+      /url\s*:\s*['"`]postgres:\/\//.test(content) ||
+      /password\s*:\s*['"`]\w+['"`]/.test(content) ||
+      /host\s*:\s*['"`][\w.]+['"`]/.test(content)
+    )
   }
 
   private hasStorageModuleForFeature(content: string): boolean {
@@ -789,16 +821,17 @@ export class GraphQLValidator {
   }
 
   private hasProperRepositoryTyping(content: string): boolean {
-    return /:\s*Repository<\w+>/.test(content) ||
-           /:\s*RepositoryWithIdCache<\w+>/.test(content)
+    return /:\s*Repository<\w+>/.test(content) || /:\s*RepositoryWithIdCache<\w+>/.test(content)
   }
 
   private hasDirectDatabaseAccess(content: string): boolean {
     // Check for direct TypeORM or database access
-    return /getConnection\(/.test(content) ||
-           /createQueryBuilder\(/.test(content) ||
-           /getRepository\(/.test(content) ||
-           /dataSource\./.test(content)
+    return (
+      /getConnection\(/.test(content) ||
+      /createQueryBuilder\(/.test(content) ||
+      /getRepository\(/.test(content) ||
+      /dataSource\./.test(content)
+    )
   }
 
   private usesQueryBuilder(content: string): boolean {
@@ -807,11 +840,13 @@ export class GraphQLValidator {
 
   private hasProperQueryBuilderPattern(content: string): boolean {
     // Check for @hgraph/storage query builder methods
-    return /\.whereEqualTo\(/.test(content) ||
-           /\.whereBetween\(/.test(content) ||
-           /\.whereIn\(/.test(content) ||
-           /\.orderByAscending\(/.test(content) ||
-           /\.orderByDescending\(/.test(content)
+    return (
+      /\.whereEqualTo\(/.test(content) ||
+      /\.whereBetween\(/.test(content) ||
+      /\.whereIn\(/.test(content) ||
+      /\.orderByAscending\(/.test(content) ||
+      /\.orderByDescending\(/.test(content)
+    )
   }
 
   private hasPaginationLogic(content: string): boolean {
@@ -868,7 +903,10 @@ export class GraphQLValidator {
 
   private containsModel(content: string): boolean {
     // Check for @Entity decorator (TypeORM) or @ObjectType (GraphQL)
-    return /@Entity\(/.test(content) || (/@ObjectType\(/.test(content) && !this.containsGraphQLResponse(content))
+    return (
+      /@Entity\(/.test(content) ||
+      (/@ObjectType\(/.test(content) && !this.containsGraphQLResponse(content))
+    )
   }
 
   private containsObjectTypeModel(content: string): boolean {

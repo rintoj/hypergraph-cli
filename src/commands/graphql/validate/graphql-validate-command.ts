@@ -141,20 +141,9 @@ function displayResults(result: ValidationResult, strict: boolean) {
 export default command<Props>('validate')
   .description('Validate GraphQL module structure and naming conventions')
   .option(
-    input('path')
-      .description('Path to the project root (defaults to current directory)')
-      .string()
+    input('path').description('Path to the project root (defaults to current directory)').string(),
   )
-  .option(
-    input('fix')
-      .description('Automatically fix issues where possible (not implemented yet)')
-  )
-  .option(
-    input('strict')
-      .description('Treat warnings as errors')
-  )
-  .option(
-    input('json')
-      .description('Output results as JSON')
-  )
+  .option(input('fix').description('Automatically fix issues where possible (not implemented yet)'))
+  .option(input('strict').description('Treat warnings as errors'))
+  .option(input('json').description('Output results as JSON'))
   .handle(run)

@@ -44,10 +44,10 @@ describe('GraphQLValidator', () => {
         'src/product/product.module.ts',
         'src/product/product.service.ts',
         'src/app.module.ts',
-      ];
+      ]
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -62,10 +62,10 @@ describe('GraphQLValidator', () => {
         'src/modules/user/user.module.ts',
         'src/domains/product/product.module.ts',
         'user/user.service.ts',
-      ];
+      ]
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -76,11 +76,11 @@ describe('GraphQLValidator', () => {
 
   describe('Input File Validation', () => {
     it('should pass when input types are in .input.ts files', async () => {
-      const mockFiles = ['src/user/user.input.ts'];
+      const mockFiles = ['src/user/user.input.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.input.ts')) {
           return Promise.resolve(`
             @InputType()
@@ -100,11 +100,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when input types are in wrong files', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             @Injectable()
@@ -131,10 +131,10 @@ describe('GraphQLValidator', () => {
     })
 
     it('should detect input classes by naming pattern', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(`
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(`
         @Injectable()
         export class UserService {
           // Service implementation
@@ -154,11 +154,11 @@ describe('GraphQLValidator', () => {
 
   describe('Response File Validation', () => {
     it('should pass when response types are in .response.ts files', async () => {
-      const mockFiles = ['src/user/user.response.ts'];
+      const mockFiles = ['src/user/user.response.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.response.ts')) {
           return Promise.resolve(`
             @ObjectType()
@@ -178,11 +178,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when response types are in wrong files', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             @Injectable()
@@ -209,10 +209,10 @@ describe('GraphQLValidator', () => {
     })
 
     it('should detect response classes by naming pattern', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(`
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(`
         @Injectable()
         export class UserService {
           // Service implementation
@@ -232,11 +232,11 @@ describe('GraphQLValidator', () => {
 
   describe('Model File Validation', () => {
     it('should pass when models are in .model.ts files', async () => {
-      const mockFiles = ['src/user/user.model.ts'];
+      const mockFiles = ['src/user/user.model.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.model.ts')) {
           return Promise.resolve(`
             @Entity()
@@ -257,11 +257,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when Entity decorators are in wrong files', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             @Injectable()
@@ -287,11 +287,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when ObjectType (non-response) is in wrong files', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             @Injectable()
@@ -319,10 +319,10 @@ describe('GraphQLValidator', () => {
 
   describe('Module Naming Validation', () => {
     it('should pass when module follows naming convention', async () => {
-      const mockFiles = ['src/user/user.module.ts'];
+      const mockFiles = ['src/user/user.module.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -334,10 +334,10 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when module has wrong file name', async () => {
-      const mockFiles = ['src/user/module.ts'];
+      const mockFiles = ['src/user/module.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -345,10 +345,10 @@ describe('GraphQLValidator', () => {
     })
 
     it('should warn when module is not in correct directory structure', async () => {
-      const mockFiles = ['src/wrongpath/user.module.ts'];
+      const mockFiles = ['src/wrongpath/user.module.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -358,10 +358,12 @@ describe('GraphQLValidator', () => {
     })
 
     it('should warn when module is missing', async () => {
-      const mockFiles = ['src/user/user.service.ts', 'src/user/user.resolver.ts'];
+      const mockFiles = ['src/user/user.service.ts', 'src/user/user.resolver.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('@Injectable() export class UserService {}');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+        '@Injectable() export class UserService {}',
+      )
 
       const result = await validator.validate()
 
@@ -373,38 +375,38 @@ describe('GraphQLValidator', () => {
 
   describe('App Module Special Case', () => {
     it('should not warn about app.module.ts path', async () => {
-      const mockFiles = ['src/app.module.ts'];
+      const mockFiles = ['src/app.module.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
-      const pathWarnings = result.warnings.filter(w =>
-        w.file.includes('app.module.ts') && w.rule === 'module-path'
+      const pathWarnings = result.warnings.filter(
+        w => w.file.includes('app.module.ts') && w.rule === 'module-path',
       )
       expect(pathWarnings).toHaveLength(0)
     })
 
     it('should not warn about missing resolver for app module', async () => {
-      const mockFiles = ['src/app.module.ts', 'src/app.service.ts'];
+      const mockFiles = ['src/app.module.ts', 'src/app.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
-      const resolverWarnings = result.warnings.filter(w =>
-        w.file === 'app' && w.rule === 'missing-resolver'
+      const resolverWarnings = result.warnings.filter(
+        w => w.file === 'app' && w.rule === 'missing-resolver',
       )
       expect(resolverWarnings).toHaveLength(0)
     })
 
     it('should allow app.module.ts at root src directory', async () => {
-      const mockFiles = ['src/app.module.ts', 'src/user/user.module.ts'];
+      const mockFiles = ['src/app.module.ts', 'src/user/user.module.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -419,11 +421,11 @@ describe('GraphQLValidator', () => {
 
   describe('Resolver File Validation', () => {
     it('should pass when resolvers are in .resolver.ts files', async () => {
-      const mockFiles = ['src/user/user.resolver.ts'];
+      const mockFiles = ['src/user/user.resolver.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.resolver.ts')) {
           return Promise.resolve(`
             @Resolver(() => User)
@@ -444,11 +446,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when resolver file lacks @Resolver decorator', async () => {
-      const mockFiles = ['src/user/user.resolver.ts'];
+      const mockFiles = ['src/user/user.resolver.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.resolver.ts')) {
           return Promise.resolve(`
             export class UserResolver {
@@ -469,11 +471,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should warn when resolver file is empty', async () => {
-      const mockFiles = ['src/user/user.resolver.ts'];
+      const mockFiles = ['src/user/user.resolver.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.resolver.ts')) {
           return Promise.resolve(`
             @Resolver()
@@ -493,10 +495,10 @@ describe('GraphQLValidator', () => {
     })
 
     it('should warn when module is missing resolver files', async () => {
-      const mockFiles = ['src/user/user.module.ts', 'src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.module.ts', 'src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -508,11 +510,11 @@ describe('GraphQLValidator', () => {
 
   describe('Service File Validation', () => {
     it('should pass when services have @Injectable decorator', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             @Injectable()
@@ -532,11 +534,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when service file lacks @Injectable decorator', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             export class UserHelper {
@@ -557,11 +559,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should pass when service follows naming pattern without decorator', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             export class UserService {
@@ -583,20 +585,20 @@ describe('GraphQLValidator', () => {
 
   describe('GraphQL Endpoint Validation', () => {
     it('should pass when GraphQL operations are in resolver files', async () => {
-      const mockFiles = ['src/user/user.resolver.ts'];
+      const mockFiles = ['src/user/user.resolver.ts']
 
-      let globCallCount = 0;
-      (glob as jest.Mock).mockImplementation(() => {
-        globCallCount++;
+      let globCallCount = 0
+      ;(glob as jest.Mock).mockImplementation(() => {
+        globCallCount++
         if (globCallCount === 1) {
-          return Promise.resolve(mockFiles);
+          return Promise.resolve(mockFiles)
         } else {
           // No non-resolver files to check
-          return Promise.resolve([]);
+          return Promise.resolve([])
         }
-      });
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      })
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.resolver.ts')) {
           return Promise.resolve(`
             @Resolver()
@@ -624,19 +626,19 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when @Query is in service file', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      let globCallCount = 0;
-      (glob as jest.Mock).mockImplementation(() => {
-        globCallCount++;
+      let globCallCount = 0
+      ;(glob as jest.Mock).mockImplementation(() => {
+        globCallCount++
         if (globCallCount === 1) {
-          return Promise.resolve(mockFiles);
+          return Promise.resolve(mockFiles)
         } else {
-          return Promise.resolve(['src/user/user.service.ts']);
+          return Promise.resolve(['src/user/user.service.ts'])
         }
-      });
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      })
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             @Injectable()
@@ -659,19 +661,19 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when @Mutation is in wrong file', async () => {
-      const mockFiles = ['src/user/user.controller.ts'];
+      const mockFiles = ['src/user/user.controller.ts']
 
-      let globCallCount = 0;
-      (glob as jest.Mock).mockImplementation(() => {
-        globCallCount++;
+      let globCallCount = 0
+      ;(glob as jest.Mock).mockImplementation(() => {
+        globCallCount++
         if (globCallCount === 1) {
-          return Promise.resolve(mockFiles);
+          return Promise.resolve(mockFiles)
         } else {
-          return Promise.resolve(['src/user/user.controller.ts']);
+          return Promise.resolve(['src/user/user.controller.ts'])
         }
-      });
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      })
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.controller.ts')) {
           return Promise.resolve(`
             export class UserController {
@@ -691,19 +693,19 @@ describe('GraphQLValidator', () => {
     })
 
     it('should fail when @FieldResolver is in wrong file', async () => {
-      const mockFiles = ['src/user/user.model.ts'];
+      const mockFiles = ['src/user/user.model.ts']
 
-      let globCallCount = 0;
-      (glob as jest.Mock).mockImplementation(() => {
-        globCallCount++;
+      let globCallCount = 0
+      ;(glob as jest.Mock).mockImplementation(() => {
+        globCallCount++
         if (globCallCount === 1) {
-          return Promise.resolve(mockFiles);
+          return Promise.resolve(mockFiles)
         } else {
-          return Promise.resolve(['src/user/user.model.ts']);
+          return Promise.resolve(['src/user/user.model.ts'])
         }
-      });
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      })
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.model.ts')) {
           return Promise.resolve(`
             @ObjectType()
@@ -733,10 +735,10 @@ describe('GraphQLValidator', () => {
 
       validator = new GraphQLValidator(mockRootPath, rulesWithDisabledInput)
 
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(`
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(`
         @InputType()
         export class CreateUserInput {
           name: string;
@@ -756,10 +758,10 @@ describe('GraphQLValidator', () => {
 
       validator = new GraphQLValidator(mockRootPath, rulesWithDisabledResponse)
 
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(`
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(`
         @Injectable()
         export class UserService {
           // Service implementation
@@ -783,10 +785,10 @@ describe('GraphQLValidator', () => {
 
       validator = new GraphQLValidator(mockRootPath, rulesWithDisabledModel)
 
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(`
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(`
         @Entity()
         export class User {
           id: string;
@@ -801,7 +803,7 @@ describe('GraphQLValidator', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty project with no files', async () => {
-      (glob as jest.Mock).mockResolvedValue([]);
+      ;(glob as jest.Mock).mockResolvedValue([])
 
       const result = await validator.validate()
 
@@ -813,10 +815,10 @@ describe('GraphQLValidator', () => {
     })
 
     it('should handle file read errors gracefully', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'))
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'))
 
       const result = await validator.validate()
 
@@ -825,10 +827,10 @@ describe('GraphQLValidator', () => {
     })
 
     it('should handle files without module association', async () => {
-      const mockFiles = ['random.ts', 'test.spec.ts'];
+      const mockFiles = ['random.ts', 'test.spec.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
 
       const result = await validator.validate()
 
@@ -841,10 +843,12 @@ describe('GraphQLValidator', () => {
         'src/user/user.service.ts',
         'src/user/user.service.spec.ts',
         'src/user/user.service.test.ts',
-      ];
+      ]
 
-      (glob as jest.Mock).mockResolvedValue(['src/user/user.service.ts']); // glob should filter out test files
-      (fs.promises.readFile as jest.Mock).mockResolvedValue('@Injectable() export class UserService {}');
+      ;(glob as jest.Mock).mockResolvedValue(['src/user/user.service.ts']) // glob should filter out test files
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+        '@Injectable() export class UserService {}',
+      )
 
       const result = await validator.validate()
 
@@ -852,11 +856,11 @@ describe('GraphQLValidator', () => {
     })
 
     it('should handle multiple violations in single file', async () => {
-      const mockFiles = ['src/user/user.service.ts'];
+      const mockFiles = ['src/user/user.service.ts']
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('user.service.ts')) {
           return Promise.resolve(`
             @Injectable()
@@ -887,13 +891,13 @@ describe('GraphQLValidator', () => {
       })
 
       // Mock glob to return service file for non-resolver check
-      let globCallCount = 0;
-      (glob as jest.Mock).mockImplementation(() => {
-        globCallCount++;
+      let globCallCount = 0
+      ;(glob as jest.Mock).mockImplementation(() => {
+        globCallCount++
         if (globCallCount === 1) {
-          return Promise.resolve(mockFiles);
+          return Promise.resolve(mockFiles)
         } else {
-          return Promise.resolve(['src/user/user.service.ts']);
+          return Promise.resolve(['src/user/user.service.ts'])
         }
       })
 
@@ -917,20 +921,20 @@ describe('GraphQLValidator', () => {
         'src/user/user.model.ts',
         'src/user/user.input.ts',
         'src/user/user.response.ts',
-      ];
+      ]
 
-      let globCallCount = 0;
-      (glob as jest.Mock).mockImplementation(() => {
-        globCallCount++;
+      let globCallCount = 0
+      ;(glob as jest.Mock).mockImplementation(() => {
+        globCallCount++
         if (globCallCount === 1) {
-          return Promise.resolve(mockFiles);
+          return Promise.resolve(mockFiles)
         } else {
           // Return non-resolver files for second call
-          return Promise.resolve(mockFiles.filter(f => !f.includes('.resolver.ts')));
+          return Promise.resolve(mockFiles.filter(f => !f.includes('.resolver.ts')))
         }
-      });
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      })
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('.module.ts')) {
           return Promise.resolve('@Module() export class UserModule {}')
         }
@@ -968,11 +972,11 @@ describe('GraphQLValidator', () => {
         'src/modules/product/product.resolver.ts',
         'src/domains/order/order.module.ts',
         'src/domains/order/order.resolver.ts',
-      ];
+      ]
 
-      (glob as jest.Mock).mockResolvedValue(mockFiles);
-      (fs.promises.readFile as jest.Mock).mockImplementation((filePath) => {
-        const path = filePath.toString();
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockImplementation(filePath => {
+        const path = filePath.toString()
         if (path.includes('.resolver.ts')) {
           return Promise.resolve('@Resolver() export class Resolver { @Query() test() {} }')
         }
