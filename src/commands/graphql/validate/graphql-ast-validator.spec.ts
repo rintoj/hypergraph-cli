@@ -32,6 +32,8 @@ describe('GraphQLValidator', () => {
     checkHgraphStorage: false,
     checkEntityFiles: false,
     checkRepositoryFiles: false,
+    checkTypeOrmModule: false,
+    checkTypeOnlyImports: false,
   }
 
   beforeEach(() => {
@@ -1196,6 +1198,104 @@ describe('GraphQLValidator', () => {
       // The actual error detection is tested in other tests, this just confirms
       // that files with submodule imports are being checked
       expect(result.errors.filter(e => e.rule === 'hgraph-storage-wherein')).toHaveLength(0)
+    })
+  })
+
+  describe('TypeOrmModule Usage Validation', () => {
+    beforeEach(() => {
+      const rulesWithTypeOrmModule: ValidationRules = {
+        ...allRules,
+        checkTypeOrmModule: true,
+      }
+      validator = new GraphQLValidator(mockRootPath, rulesWithTypeOrmModule)
+    })
+
+    it('should pass when file does not import TypeOrmModule', async () => {
+      const mockFiles = ['src/config/config.module.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
+
+      const result = await validator.validate()
+
+      expect(result.errors.filter(e => e.rule === 'typeorm-module-usage')).toHaveLength(0)
+    })
+
+    it('should pass when file uses @hgraph/storage instead of TypeOrmModule', async () => {
+      const mockFiles = ['src/config/config.module.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
+
+      const result = await validator.validate()
+
+      expect(result.errors.filter(e => e.rule === 'typeorm-module-usage')).toHaveLength(0)
+    })
+
+    it('should skip validation when rule is disabled', async () => {
+      const rulesWithDisabledTypeOrmModule: ValidationRules = {
+        ...allRules,
+        checkTypeOrmModule: false,
+      }
+      validator = new GraphQLValidator(mockRootPath, rulesWithDisabledTypeOrmModule)
+
+      const mockFiles = ['src/config/config.module.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
+
+      const result = await validator.validate()
+
+      expect(result.errors.filter(e => e.rule === 'typeorm-module-usage')).toHaveLength(0)
+    })
+  })
+
+  describe('Type-Only Import in Decorator Validation', () => {
+    beforeEach(() => {
+      const rulesWithTypeOnlyImports: ValidationRules = {
+        ...allRules,
+        checkTypeOnlyImports: true,
+      }
+      validator = new GraphQLValidator(mockRootPath, rulesWithTypeOnlyImports)
+    })
+
+    it('should pass when file does not have type-only imports', async () => {
+      const mockFiles = ['src/user/user.service.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
+
+      const result = await validator.validate()
+
+      expect(result.errors.filter(e => e.rule === 'type-only-import-in-decorator')).toHaveLength(0)
+    })
+
+    it('should pass when type-only imports are not used in decorators', async () => {
+      const mockFiles = ['src/user/user.service.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
+
+      const result = await validator.validate()
+
+      expect(result.errors.filter(e => e.rule === 'type-only-import-in-decorator')).toHaveLength(0)
+    })
+
+    it('should skip validation when rule is disabled', async () => {
+      const rulesWithDisabledTypeOnlyImports: ValidationRules = {
+        ...allRules,
+        checkTypeOnlyImports: false,
+      }
+      validator = new GraphQLValidator(mockRootPath, rulesWithDisabledTypeOnlyImports)
+
+      const mockFiles = ['src/user/user.service.ts']
+
+      ;(glob as jest.Mock).mockResolvedValue(mockFiles)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('')
+
+      const result = await validator.validate()
+
+      expect(result.errors.filter(e => e.rule === 'type-only-import-in-decorator')).toHaveLength(0)
     })
   })
 })

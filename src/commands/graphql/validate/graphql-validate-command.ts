@@ -60,6 +60,8 @@ async function run({ path: targetPath, fix, strict, json }: Props) {
     checkHgraphStorage: true,
     checkEntityFiles: true,
     checkRepositoryFiles: true,
+    checkTypeOrmModule: true,
+    checkTypeOnlyImports: true,
   }
 
   const validator = new GraphQLASTValidator(rootPath, rules)

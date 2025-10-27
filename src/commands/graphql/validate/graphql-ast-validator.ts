@@ -32,6 +32,8 @@ export interface ValidationRules {
   checkHgraphStorage: boolean
   checkEntityFiles: boolean
   checkRepositoryFiles: boolean
+  checkTypeOrmModule: boolean
+  checkTypeOnlyImports: boolean
 }
 
 export class GraphQLASTValidator {
@@ -244,6 +246,14 @@ export class GraphQLASTValidator {
 
     if (this.rules.checkHgraphStorage) {
       await this.validateHgraphStorageChains(moduleName, files)
+    }
+
+    if (this.rules.checkTypeOrmModule) {
+      await this.validateTypeOrmModuleUsage(moduleName, files)
+    }
+
+    if (this.rules.checkTypeOnlyImports) {
+      await this.validateTypeOnlyImports(moduleName, files)
     }
   }
 
@@ -962,6 +972,150 @@ export class GraphQLASTValidator {
           }
         }
       })
+    }
+  }
+
+  private async validateTypeOrmModuleUsage(moduleName: string, allFiles: string[]) {
+    if (!this.program) return
+
+    for (const file of allFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      // Check for TypeOrmModule and InjectRepository imports from @nestjs/typeorm
+      this.visitNode(sourceFile, node => {
+        if (ts.isImportDeclaration(node)) {
+          const moduleSpecifier = node.moduleSpecifier
+          if (ts.isStringLiteral(moduleSpecifier) && moduleSpecifier.text === '@nestjs/typeorm') {
+            // Check if TypeOrmModule or InjectRepository is being imported
+            const importClause = node.importClause
+            if (importClause && importClause.namedBindings) {
+              if (ts.isNamedImports(importClause.namedBindings)) {
+                for (const element of importClause.namedBindings.elements) {
+                  const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+
+                  if (element.name.text === 'TypeOrmModule') {
+                    this.addError(
+                      file,
+                      'typeorm-module-usage',
+                      'Never use TypeOrmModule directly. Use @hgraph/storage module instead. Import StorageModule from @hgraph/storage/nestjs',
+                      line,
+                    )
+                  }
+
+                  if (element.name.text === 'InjectRepository') {
+                    this.addError(
+                      file,
+                      'inject-repository-usage',
+                      'Never use @InjectRepository decorator directly. Use @InjectRepo from @hgraph/storage/nestjs instead',
+                      line,
+                    )
+                  }
+                }
+              }
+            }
+          }
+        }
+      })
+    }
+  }
+
+  private async validateTypeOnlyImports(moduleName: string, allFiles: string[]) {
+    if (!this.program) return
+
+    for (const file of allFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      // Track type-only imports
+      const typeOnlyImports = new Map<string, { line: number; source: string }>()
+
+      // First pass: collect type-only imports
+      this.visitNode(sourceFile, node => {
+        if (ts.isImportDeclaration(node)) {
+          const importClause = node.importClause
+          const moduleSpecifier = node.moduleSpecifier
+
+          // Check for type-only imports: import type { X } from '...'
+          if (importClause && importClause.isTypeOnly && ts.isStringLiteral(moduleSpecifier)) {
+            if (importClause.namedBindings && ts.isNamedImports(importClause.namedBindings)) {
+              for (const element of importClause.namedBindings.elements) {
+                const importedName = element.name.text
+                const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+                typeOnlyImports.set(importedName, {
+                  line,
+                  source: moduleSpecifier.text,
+                })
+              }
+            }
+          }
+
+          // Check for individual type-only imports: import { type X } from '...'
+          if (
+            importClause &&
+            !importClause.isTypeOnly &&
+            importClause.namedBindings &&
+            ts.isNamedImports(importClause.namedBindings) &&
+            ts.isStringLiteral(moduleSpecifier)
+          ) {
+            for (const element of importClause.namedBindings.elements) {
+              if (element.isTypeOnly) {
+                const importedName = element.name.text
+                const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+                typeOnlyImports.set(importedName, {
+                  line,
+                  source: moduleSpecifier.text,
+                })
+              }
+            }
+          }
+        }
+      })
+
+      // Second pass: check if type-only imports are used in decorators
+      if (typeOnlyImports.size > 0) {
+        this.visitNode(sourceFile, node => {
+          // Check decorator arguments
+          if (ts.isDecorator(node)) {
+            const expression = node.expression
+
+            // Handle both @Decorator and @Decorator(args)
+            let decoratorName = ''
+            let callExpression: ts.CallExpression | undefined
+
+            if (ts.isCallExpression(expression)) {
+              callExpression = expression
+              if (ts.isIdentifier(expression.expression)) {
+                decoratorName = expression.expression.text
+              }
+            } else if (ts.isIdentifier(expression)) {
+              decoratorName = expression.text
+            }
+
+            // Check if this is a decorator that needs runtime values
+            const runtimeDecorators = ['InjectRepo', 'InjectRepository', 'InjectModel']
+
+            if (runtimeDecorators.includes(decoratorName) && callExpression) {
+              // Check all arguments for type-only imports
+              for (const arg of callExpression.arguments) {
+                if (ts.isIdentifier(arg)) {
+                  const argName = arg.text
+                  if (typeOnlyImports.has(argName)) {
+                    const importInfo = typeOnlyImports.get(argName)!
+                    const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+                    this.addError(
+                      file,
+                      'type-only-import-in-decorator',
+                      `Cannot use type-only import '${argName}' in decorator @${decoratorName}(). Remove 'type' keyword from import statement at line ${importInfo.line}. Decorators need runtime values, not just types.`,
+                      line,
+                    )
+                  }
+                }
+              }
+            }
+          }
+        })
+      }
     }
   }
 
