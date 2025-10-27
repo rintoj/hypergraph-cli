@@ -241,6 +241,10 @@ export class GraphQLASTValidator {
     if (this.rules.checkResolverEndpoints) {
       await this.validateResolverEndpoints(moduleName, moduleFiles.resolvers, files)
     }
+
+    if (this.rules.checkHgraphStorage) {
+      await this.validateHgraphStorageChains(moduleName, files)
+    }
   }
 
   private async validateInputFiles(moduleName: string, inputFiles: string[]) {
@@ -917,6 +921,90 @@ export class GraphQLASTValidator {
         }
       })
     }
+  }
+
+  private async validateHgraphStorageChains(moduleName: string, allFiles: string[]) {
+    if (!this.program) return
+
+    for (const file of allFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      // Check if this file imports from @hgraph/storage
+      const hasHgraphStorageImport = this.hasImportFrom(sourceFile, '@hgraph/storage')
+      if (!hasHgraphStorageImport) continue
+
+      // Visit all nodes to find query chains
+      this.visitNode(sourceFile, node => {
+        if (ts.isCallExpression(node)) {
+          // Extract the method call chain
+          const methodChain = this.extractMethodChain(node)
+
+          // Check if whereIn exists in the chain
+          const whereInIndex = methodChain.findIndex(method => method.name === 'whereIn')
+          if (whereInIndex === -1) return // No whereIn in this chain
+
+          // whereIn should be the last method (index 0 in our reversed chain)
+          if (whereInIndex !== 0) {
+            // whereIn is not the last method - this is an error
+            const methodsAfterWhereIn = methodChain
+              .slice(0, whereInIndex)
+              .map(m => `.${m.name}()`)
+              .join('')
+
+            const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+            this.addError(
+              file,
+              'hgraph-storage-wherein',
+              `.whereIn() must be the last method in the query chain. Found ${methodsAfterWhereIn} after .whereIn()`,
+              line,
+            )
+          }
+        }
+      })
+    }
+  }
+
+  /**
+   * Check if a source file has an import from a specific module
+   */
+  private hasImportFrom(sourceFile: ts.SourceFile, moduleName: string): boolean {
+    let hasImport = false
+
+    this.visitNode(sourceFile, node => {
+      if (ts.isImportDeclaration(node)) {
+        const moduleSpecifier = node.moduleSpecifier
+        if (ts.isStringLiteral(moduleSpecifier) && moduleSpecifier.text.startsWith(moduleName)) {
+          hasImport = true
+        }
+      }
+    })
+
+    return hasImport
+  }
+
+  /**
+   * Extract method call chain from a CallExpression
+   * Returns array of methods in reverse order (last call first)
+   * Example: q.whereEqualTo().whereIn() -> ['whereIn', 'whereEqualTo']
+   */
+  private extractMethodChain(node: ts.CallExpression): Array<{ name: string; node: ts.Node }> {
+    const chain: Array<{ name: string; node: ts.Node }> = []
+    let current: ts.Node = node
+
+    while (ts.isCallExpression(current)) {
+      const expression = current.expression
+
+      if (ts.isPropertyAccessExpression(expression)) {
+        const methodName = expression.name.text
+        chain.push({ name: methodName, node: current })
+        current = expression.expression
+      } else {
+        break
+      }
+    }
+
+    return chain
   }
 
   // Helper methods for AST traversal
