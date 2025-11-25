@@ -34,6 +34,7 @@ export interface ValidationRules {
   checkRepositoryFiles: boolean
   checkTypeOrmModule: boolean
   checkTypeOnlyImports: boolean
+  checkUnderscorePropertyUsage: boolean
 }
 
 export class GraphQLASTValidator {
@@ -254,6 +255,10 @@ export class GraphQLASTValidator {
 
     if (this.rules.checkTypeOnlyImports) {
       await this.validateTypeOnlyImports(moduleName, files)
+    }
+
+    if (this.rules.checkUnderscorePropertyUsage) {
+      await this.validateUnderscorePropertyUsage(moduleName, files)
     }
   }
 
@@ -1091,6 +1096,81 @@ export class GraphQLASTValidator {
           }
         })
       }
+    }
+  }
+
+  private async validateUnderscorePropertyUsage(moduleName: string, allFiles: string[]) {
+    if (!this.program) return
+
+    for (const file of allFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      this.visitNode(sourceFile, node => {
+        if (ts.isClassDeclaration(node)) {
+          // Collect all properties that start with underscore
+          const underscoreProperties = new Map<string, { line: number; nameWithoutUnderscore: string }>()
+
+          // First pass: collect underscore-prefixed properties from class members
+          node.members.forEach(member => {
+            if (ts.isPropertyDeclaration(member)) {
+              if (member.name && ts.isIdentifier(member.name)) {
+                const propName = member.name.text
+                if (propName.startsWith('_')) {
+                  const nameWithoutUnderscore = propName.slice(1)
+                  const line = this.getLineNumber(sourceFile, member.getStart(sourceFile))
+                  underscoreProperties.set(propName, { line, nameWithoutUnderscore })
+                }
+              }
+            }
+          })
+
+          // Also check constructor parameters (which become class properties)
+          node.members.forEach(member => {
+            if (ts.isConstructorDeclaration(member)) {
+              member.parameters.forEach(param => {
+                if (param.name && ts.isIdentifier(param.name)) {
+                  const propName = param.name.text
+                  if (propName.startsWith('_')) {
+                    const nameWithoutUnderscore = propName.slice(1)
+                    const line = this.getLineNumber(sourceFile, param.getStart(sourceFile))
+                    underscoreProperties.set(propName, { line, nameWithoutUnderscore })
+                  }
+                }
+              })
+            }
+          })
+
+          if (underscoreProperties.size === 0) return
+
+          // Second pass: check if the underscore version is used anywhere in the class
+          const usedUnderscoreProperties = new Set<string>()
+
+          this.visitNode(node, innerNode => {
+            // Check property access like this._messageRepository
+            if (ts.isPropertyAccessExpression(innerNode)) {
+              if (innerNode.expression.kind === ts.SyntaxKind.ThisKeyword) {
+                const accessedProp = innerNode.name.text
+                if (accessedProp.startsWith('_')) {
+                  usedUnderscoreProperties.add(accessedProp)
+                }
+              }
+            }
+          })
+
+          // Report errors where underscore property is defined AND used with underscore
+          for (const [propName, info] of underscoreProperties) {
+            if (usedUnderscoreProperties.has(propName)) {
+              this.addError(
+                file,
+                'underscore-property-usage',
+                `Property '${propName}' should not use underscore prefix if it's being used. Rename to '${info.nameWithoutUnderscore}'.`,
+                info.line,
+              )
+            }
+          }
+        }
+      })
     }
   }
 

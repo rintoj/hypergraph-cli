@@ -62,6 +62,7 @@ async function run({ path: targetPath, fix, strict, json }: Props) {
     checkRepositoryFiles: true,
     checkTypeOrmModule: true,
     checkTypeOnlyImports: true,
+    checkUnderscorePropertyUsage: true,
   }
 
   const validator = new GraphQLASTValidator(rootPath, rules)
