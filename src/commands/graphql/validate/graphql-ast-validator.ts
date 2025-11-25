@@ -274,7 +274,9 @@ export class GraphQLASTValidator {
       this.visitNode(sourceFile, node => {
         if (ts.isClassDeclaration(node)) {
           const decorators = this.getDecorators(node)
-          const hasInputTypeDecorator = decorators.some(d => this.getDecoratorName(d) === 'InputType')
+          const hasInputTypeDecorator = decorators.some(
+            d => this.getDecoratorName(d) === 'InputType',
+          )
 
           if (hasInputTypeDecorator) {
             // Check each property for unnecessary validation decorators
@@ -398,7 +400,9 @@ export class GraphQLASTValidator {
               this.addError(
                 file,
                 'response-location',
-                `GraphQL response types should be in .response.ts files, found in ${path.basename(file)}`,
+                `GraphQL response types should be in .response.ts files, found in ${path.basename(
+                  file,
+                )}`,
                 line,
               )
             }
@@ -659,7 +663,11 @@ export class GraphQLASTValidator {
           const decorators = this.getDecorators(node)
           for (const decorator of decorators) {
             const decoratorName = this.getDecoratorName(decorator)
-            if (['Query', 'Mutation', 'Subscription', 'ResolveField', 'FieldResolver'].includes(decoratorName)) {
+            if (
+              ['Query', 'Mutation', 'Subscription', 'ResolveField', 'FieldResolver'].includes(
+                decoratorName,
+              )
+            ) {
               hasAnyOperation = true
             }
           }
@@ -700,7 +708,9 @@ export class GraphQLASTValidator {
         if (ts.isClassDeclaration(node)) {
           const className = node.name?.text || ''
           const decorators = this.getDecorators(node)
-          const hasInjectableDecorator = decorators.some(d => this.getDecoratorName(d) === 'Injectable')
+          const hasInjectableDecorator = decorators.some(
+            d => this.getDecoratorName(d) === 'Injectable',
+          )
 
           // Consider it a service if it has @Injectable or class name ends with Service
           if (hasInjectableDecorator || className.endsWith('Service')) {
@@ -719,7 +729,11 @@ export class GraphQLASTValidator {
     }
   }
 
-  private async validateModuleNaming(moduleName: string, moduleFiles: string[], allFiles: string[]) {
+  private async validateModuleNaming(
+    moduleName: string,
+    moduleFiles: string[],
+    allFiles: string[],
+  ) {
     // Check if this module has any NestJS-related files that would require a .module.ts
     const hasNestJSFiles = allFiles.some(
       file =>
@@ -1109,7 +1123,10 @@ export class GraphQLASTValidator {
       this.visitNode(sourceFile, node => {
         if (ts.isClassDeclaration(node)) {
           // Collect all properties that start with underscore
-          const underscoreProperties = new Map<string, { line: number; nameWithoutUnderscore: string }>()
+          const underscoreProperties = new Map<
+            string,
+            { line: number; nameWithoutUnderscore: string }
+          >()
 
           // First pass: collect underscore-prefixed properties from class members
           node.members.forEach(member => {
