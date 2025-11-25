@@ -34,6 +34,7 @@ export interface ValidationRules {
   checkRepositoryFiles: boolean
   checkTypeOrmModule: boolean
   checkTypeOnlyImports: boolean
+  checkUnderscorePropertyUsage: boolean
 }
 
 export class GraphQLASTValidator {
@@ -255,21 +256,16 @@ export class GraphQLASTValidator {
     if (this.rules.checkTypeOnlyImports) {
       await this.validateTypeOnlyImports(moduleName, files)
     }
+
+    if (this.rules.checkUnderscorePropertyUsage) {
+      await this.validateUnderscorePropertyUsage(moduleName, files)
+    }
   }
 
   private async validateInputFiles(moduleName: string, inputFiles: string[]) {
     if (!this.program) return
 
-    const unnecessaryValidators = new Set([
-      'IsEnum',
-      'IsString',
-      'IsNumber',
-      'IsBoolean',
-      'IsInt',
-      'IsArray',
-      'IsObject',
-      'IsDate',
-    ])
+    const unnecessaryValidators = new Set<string>([])
 
     for (const file of inputFiles) {
       const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
@@ -278,7 +274,9 @@ export class GraphQLASTValidator {
       this.visitNode(sourceFile, node => {
         if (ts.isClassDeclaration(node)) {
           const decorators = this.getDecorators(node)
-          const hasInputTypeDecorator = decorators.some(d => this.getDecoratorName(d) === 'InputType')
+          const hasInputTypeDecorator = decorators.some(
+            d => this.getDecoratorName(d) === 'InputType',
+          )
 
           if (hasInputTypeDecorator) {
             // Check each property for unnecessary validation decorators
@@ -402,7 +400,9 @@ export class GraphQLASTValidator {
               this.addError(
                 file,
                 'response-location',
-                `GraphQL response types should be in .response.ts files, found in ${path.basename(file)}`,
+                `GraphQL response types should be in .response.ts files, found in ${path.basename(
+                  file,
+                )}`,
                 line,
               )
             }
@@ -523,7 +523,7 @@ export class GraphQLASTValidator {
             this.addWarning(
               file,
               'missing-column-decorator',
-              'Entity properties should have @Column() or relation decorator for persistence (or be computed via resolver)',
+              `Property '${propertyName}' is missing @Column() or relation decorator. If you want to keep it GraphQL-only without persistence, move this to a @ResolveField() in the resolver.`,
               line,
             )
           }
@@ -663,7 +663,11 @@ export class GraphQLASTValidator {
           const decorators = this.getDecorators(node)
           for (const decorator of decorators) {
             const decoratorName = this.getDecoratorName(decorator)
-            if (['Query', 'Mutation', 'Subscription', 'ResolveField', 'FieldResolver'].includes(decoratorName)) {
+            if (
+              ['Query', 'Mutation', 'Subscription', 'ResolveField', 'FieldResolver'].includes(
+                decoratorName,
+              )
+            ) {
               hasAnyOperation = true
             }
           }
@@ -704,7 +708,9 @@ export class GraphQLASTValidator {
         if (ts.isClassDeclaration(node)) {
           const className = node.name?.text || ''
           const decorators = this.getDecorators(node)
-          const hasInjectableDecorator = decorators.some(d => this.getDecoratorName(d) === 'Injectable')
+          const hasInjectableDecorator = decorators.some(
+            d => this.getDecoratorName(d) === 'Injectable',
+          )
 
           // Consider it a service if it has @Injectable or class name ends with Service
           if (hasInjectableDecorator || className.endsWith('Service')) {
@@ -723,7 +729,11 @@ export class GraphQLASTValidator {
     }
   }
 
-  private async validateModuleNaming(moduleName: string, moduleFiles: string[], allFiles: string[]) {
+  private async validateModuleNaming(
+    moduleName: string,
+    moduleFiles: string[],
+    allFiles: string[],
+  ) {
     // Check if this module has any NestJS-related files that would require a .module.ts
     const hasNestJSFiles = allFiles.some(
       file =>
@@ -745,23 +755,16 @@ export class GraphQLASTValidator {
     // Check module file naming and path
     for (const file of moduleFiles) {
       const fileName = path.basename(file, '.ts')
-      const expectedFileName = `${moduleName}.module`
 
-      if (fileName !== expectedFileName && moduleName !== 'app') {
+      // Allow patterns like: moduleName.module.ts or moduleName-*.module.ts
+      const isValidNaming =
+        fileName === `${moduleName}.module` || fileName.startsWith(`${moduleName}-`)
+
+      if (!isValidNaming && moduleName !== 'app') {
         this.addWarning(
           file,
           'module-naming',
-          `Module file should be named "${expectedFileName}.ts", found "${fileName}.ts"`,
-        )
-      }
-
-      // Check if module is in correct directory structure
-      const expectedPath = `${moduleName}/${moduleName}.module.ts`
-      if (!file.endsWith(expectedPath) && moduleName !== 'app') {
-        this.addWarning(
-          file,
-          'module-path',
-          `Module file should be at path ending with "${expectedPath}", found at "${file}"`,
+          `Module file should be named "${moduleName}.module.ts" or "${moduleName}-*.module.ts", found "${fileName}.ts"`,
         )
       }
     }
@@ -874,7 +877,8 @@ export class GraphQLASTValidator {
           // If there are more than 1 @Args() decorator, report an error
           if (argsCount > 1) {
             const methodName = node.name && ts.isIdentifier(node.name) ? node.name.text : 'unknown'
-            const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+            // Use the first @Args parameter line for the snippet
+            const line = argsParameters[0]?.line
 
             const paramList = argsParameters.map(p => `@Args('${p.name}')`).join(', ')
 
@@ -884,16 +888,6 @@ export class GraphQLASTValidator {
               `GraphQL endpoints should have maximum 1 @Args() decorator. Method '${methodName}' has ${argsCount} @Args() decorators (${paramList}). When there are multiple arguments, combine them into a single input type.`,
               line,
             )
-
-            // Add specific errors for each @Args parameter
-            for (const param of argsParameters) {
-              this.addError(
-                file,
-                'multiple-args-decorators',
-                `Parameter '${param.name}' should be part of an input type instead of using @Args() directly`,
-                param.line,
-              )
-            }
           }
         }
       }
@@ -1116,6 +1110,84 @@ export class GraphQLASTValidator {
           }
         })
       }
+    }
+  }
+
+  private async validateUnderscorePropertyUsage(moduleName: string, allFiles: string[]) {
+    if (!this.program) return
+
+    for (const file of allFiles) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      this.visitNode(sourceFile, node => {
+        if (ts.isClassDeclaration(node)) {
+          // Collect all properties that start with underscore
+          const underscoreProperties = new Map<
+            string,
+            { line: number; nameWithoutUnderscore: string }
+          >()
+
+          // First pass: collect underscore-prefixed properties from class members
+          node.members.forEach(member => {
+            if (ts.isPropertyDeclaration(member)) {
+              if (member.name && ts.isIdentifier(member.name)) {
+                const propName = member.name.text
+                if (propName.startsWith('_')) {
+                  const nameWithoutUnderscore = propName.slice(1)
+                  const line = this.getLineNumber(sourceFile, member.getStart(sourceFile))
+                  underscoreProperties.set(propName, { line, nameWithoutUnderscore })
+                }
+              }
+            }
+          })
+
+          // Also check constructor parameters (which become class properties)
+          node.members.forEach(member => {
+            if (ts.isConstructorDeclaration(member)) {
+              member.parameters.forEach(param => {
+                if (param.name && ts.isIdentifier(param.name)) {
+                  const propName = param.name.text
+                  if (propName.startsWith('_')) {
+                    const nameWithoutUnderscore = propName.slice(1)
+                    const line = this.getLineNumber(sourceFile, param.getStart(sourceFile))
+                    underscoreProperties.set(propName, { line, nameWithoutUnderscore })
+                  }
+                }
+              })
+            }
+          })
+
+          if (underscoreProperties.size === 0) return
+
+          // Second pass: check if the underscore version is used anywhere in the class
+          const usedUnderscoreProperties = new Set<string>()
+
+          this.visitNode(node, innerNode => {
+            // Check property access like this._messageRepository
+            if (ts.isPropertyAccessExpression(innerNode)) {
+              if (innerNode.expression.kind === ts.SyntaxKind.ThisKeyword) {
+                const accessedProp = innerNode.name.text
+                if (accessedProp.startsWith('_')) {
+                  usedUnderscoreProperties.add(accessedProp)
+                }
+              }
+            }
+          })
+
+          // Report errors where underscore property is defined AND used with underscore
+          for (const [propName, info] of underscoreProperties) {
+            if (usedUnderscoreProperties.has(propName)) {
+              this.addError(
+                file,
+                'underscore-property-usage',
+                `Property '${propName}' should not use underscore prefix if it's being used. Rename to '${info.nameWithoutUnderscore}'.`,
+                info.line,
+              )
+            }
+          }
+        }
+      })
     }
   }
 

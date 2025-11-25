@@ -34,6 +34,7 @@ describe('GraphQLValidator', () => {
     checkRepositoryFiles: false,
     checkTypeOrmModule: false,
     checkTypeOnlyImports: false,
+    checkUnderscorePropertyUsage: false,
   }
 
   beforeEach(() => {
