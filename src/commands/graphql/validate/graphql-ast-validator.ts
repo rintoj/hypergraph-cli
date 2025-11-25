@@ -260,16 +260,7 @@ export class GraphQLASTValidator {
   private async validateInputFiles(moduleName: string, inputFiles: string[]) {
     if (!this.program) return
 
-    const unnecessaryValidators = new Set([
-      'IsEnum',
-      'IsString',
-      'IsNumber',
-      'IsBoolean',
-      'IsInt',
-      'IsArray',
-      'IsObject',
-      'IsDate',
-    ])
+    const unnecessaryValidators = new Set<string>([])
 
     for (const file of inputFiles) {
       const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
@@ -523,7 +514,7 @@ export class GraphQLASTValidator {
             this.addWarning(
               file,
               'missing-column-decorator',
-              'Entity properties should have @Column() or relation decorator for persistence (or be computed via resolver)',
+              `Property '${propertyName}' is missing @Column() or relation decorator. If you want to keep it GraphQL-only without persistence, move this to a @ResolveField() in the resolver.`,
               line,
             )
           }
@@ -745,23 +736,16 @@ export class GraphQLASTValidator {
     // Check module file naming and path
     for (const file of moduleFiles) {
       const fileName = path.basename(file, '.ts')
-      const expectedFileName = `${moduleName}.module`
 
-      if (fileName !== expectedFileName && moduleName !== 'app') {
+      // Allow patterns like: moduleName.module.ts or moduleName-*.module.ts
+      const isValidNaming =
+        fileName === `${moduleName}.module` || fileName.startsWith(`${moduleName}-`)
+
+      if (!isValidNaming && moduleName !== 'app') {
         this.addWarning(
           file,
           'module-naming',
-          `Module file should be named "${expectedFileName}.ts", found "${fileName}.ts"`,
-        )
-      }
-
-      // Check if module is in correct directory structure
-      const expectedPath = `${moduleName}/${moduleName}.module.ts`
-      if (!file.endsWith(expectedPath) && moduleName !== 'app') {
-        this.addWarning(
-          file,
-          'module-path',
-          `Module file should be at path ending with "${expectedPath}", found at "${file}"`,
+          `Module file should be named "${moduleName}.module.ts" or "${moduleName}-*.module.ts", found "${fileName}.ts"`,
         )
       }
     }
@@ -874,7 +858,8 @@ export class GraphQLASTValidator {
           // If there are more than 1 @Args() decorator, report an error
           if (argsCount > 1) {
             const methodName = node.name && ts.isIdentifier(node.name) ? node.name.text : 'unknown'
-            const line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+            // Use the first @Args parameter line for the snippet
+            const line = argsParameters[0]?.line
 
             const paramList = argsParameters.map(p => `@Args('${p.name}')`).join(', ')
 
@@ -884,16 +869,6 @@ export class GraphQLASTValidator {
               `GraphQL endpoints should have maximum 1 @Args() decorator. Method '${methodName}' has ${argsCount} @Args() decorators (${paramList}). When there are multiple arguments, combine them into a single input type.`,
               line,
             )
-
-            // Add specific errors for each @Args parameter
-            for (const param of argsParameters) {
-              this.addError(
-                file,
-                'multiple-args-decorators',
-                `Parameter '${param.name}' should be part of an input type instead of using @Args() directly`,
-                param.line,
-              )
-            }
           }
         }
       }
