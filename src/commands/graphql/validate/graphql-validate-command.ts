@@ -1,5 +1,6 @@
 import { command, input } from 'clifer'
 import * as path from 'path'
+import * as fs from 'fs'
 import chalk from 'chalk'
 // import { GraphQLValidator, ValidationRules, ValidationResult } from './graphql-validator'
 import { GraphQLASTValidator, ValidationRules, ValidationResult } from './graphql-ast-validator'
@@ -9,6 +10,57 @@ interface Props {
   fix?: boolean
   strict?: boolean
   json?: boolean
+}
+
+// Default validation rules
+const DEFAULT_RULES: ValidationRules = {
+  checkInputFiles: true,
+  checkResponseFiles: true,
+  checkModelFiles: true,
+  checkModuleNaming: true,
+  checkResolverFiles: true,
+  checkServiceFiles: true,
+  checkResolverEndpoints: true,
+  checkHgraphStorage: true,
+  checkEntityFiles: true,
+  checkRepositoryFiles: true,
+  checkTypeOrmModule: true,
+  checkTypeOnlyImports: true,
+  checkUnderscorePropertyUsage: true,
+  // Individual file naming checks
+  checkModelFileNaming: true,
+  checkServiceFileNaming: true,
+  checkResolverFileNaming: true,
+  checkInputFileNaming: true,
+  checkResponseFileNaming: true,
+  checkModuleFileNaming: true,
+  checkEnumFileNaming: true,
+  checkUtilFileNaming: true,
+  checkTestFileNaming: true,
+  checkRepositoryFileNaming: true,
+}
+
+interface HgConfig {
+  validation?: Partial<ValidationRules>
+}
+
+/**
+ * Load configuration from .hgconfig.json file
+ */
+function loadConfig(rootPath: string): Partial<ValidationRules> {
+  const configPath = path.join(rootPath, '.hgconfig.json')
+
+  try {
+    if (fs.existsSync(configPath)) {
+      const configContent = fs.readFileSync(configPath, 'utf-8')
+      const config: HgConfig = JSON.parse(configContent)
+      return config.validation || {}
+    }
+  } catch (error) {
+    console.warn(chalk.yellow(`Warning: Failed to parse .hgconfig.json: ${error}`))
+  }
+
+  return {}
 }
 
 // Syntax highlighting for TypeScript code
@@ -48,22 +100,9 @@ function highlightTypeScriptSyntax(code: string): string {
 async function run({ path: targetPath, fix, strict, json }: Props) {
   const rootPath = targetPath ? path.resolve(targetPath) : process.cwd()
 
-  // Define validation rules based on strict mode
-  const rules: ValidationRules = {
-    checkInputFiles: true,
-    checkResponseFiles: true,
-    checkModelFiles: true,
-    checkModuleNaming: true,
-    checkResolverFiles: true,
-    checkServiceFiles: true,
-    checkResolverEndpoints: true,
-    checkHgraphStorage: true,
-    checkEntityFiles: true,
-    checkRepositoryFiles: true,
-    checkTypeOrmModule: true,
-    checkTypeOnlyImports: true,
-    checkUnderscorePropertyUsage: true,
-  }
+  // Load config from .hgconfig.json and merge with defaults
+  const configOverrides = loadConfig(rootPath)
+  const rules: ValidationRules = { ...DEFAULT_RULES, ...configOverrides }
 
   const validator = new GraphQLASTValidator(rootPath, rules)
   const result: ValidationResult = await validator.validate()

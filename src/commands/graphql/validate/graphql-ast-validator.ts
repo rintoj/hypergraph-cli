@@ -35,6 +35,50 @@ export interface ValidationRules {
   checkTypeOrmModule: boolean
   checkTypeOnlyImports: boolean
   checkUnderscorePropertyUsage: boolean
+  // Individual file naming checks
+  checkModelFileNaming: boolean
+  checkServiceFileNaming: boolean
+  checkResolverFileNaming: boolean
+  checkInputFileNaming: boolean
+  checkResponseFileNaming: boolean
+  checkModuleFileNaming: boolean
+  checkEnumFileNaming: boolean
+  checkUtilFileNaming: boolean
+  checkTestFileNaming: boolean
+  checkRepositoryFileNaming: boolean
+}
+
+// File types that should follow naming conventions
+export type ValidatedFileType =
+  | 'model'
+  | 'service'
+  | 'resolver'
+  | 'input'
+  | 'response'
+  | 'module'
+  | 'enum'
+  | 'util'
+  | 'test'
+  | 'repository'
+
+// Configuration for each file type's naming validation
+interface FileTypeConfig {
+  suffix: string
+  errorCode: string
+  severity: 'error' | 'warning'
+}
+
+const FILE_TYPE_CONFIGS: Record<ValidatedFileType, FileTypeConfig> = {
+  model: { suffix: '.model', errorCode: 'model-naming', severity: 'error' },
+  service: { suffix: '.service', errorCode: 'service-naming', severity: 'error' },
+  resolver: { suffix: '.resolver', errorCode: 'resolver-naming', severity: 'error' },
+  input: { suffix: '.input', errorCode: 'input-naming', severity: 'error' },
+  response: { suffix: '.response', errorCode: 'response-naming', severity: 'error' },
+  module: { suffix: '.module', errorCode: 'module-naming', severity: 'error' },
+  enum: { suffix: '.enum', errorCode: 'enum-naming', severity: 'error' },
+  util: { suffix: '.util', errorCode: 'util-naming', severity: 'error' },
+  test: { suffix: '.test', errorCode: 'test-naming', severity: 'error' },
+  repository: { suffix: '.repository', errorCode: 'repository-naming', severity: 'error' },
 }
 
 export class GraphQLASTValidator {
@@ -61,12 +105,12 @@ export class GraphQLASTValidator {
     const gitignorePatterns = await this.getGitignorePatterns()
 
     // Combine default ignore patterns with gitignore patterns
+    // Note: .test.ts files are included for naming validation but .spec.ts files are excluded
     const ignorePatterns = [
       'node_modules/**',
       'dist/**',
       'build/**',
       '**/*.spec.ts',
-      '**/*.test.ts',
       ...gitignorePatterns,
     ]
 
@@ -169,7 +213,9 @@ export class GraphQLASTValidator {
     }
 
     const fileName = path.basename(filePath)
-    const match = fileName.match(/^([a-z-]+)\.(input|response|model|module|resolver|service)\.ts$/)
+    const match = fileName.match(
+      /^([a-z-]+)\.(input|response|model|module|resolver|service|enum|util|test|repository)\.ts$/,
+    )
     if (match) {
       return match[1]
     }
@@ -187,6 +233,9 @@ export class GraphQLASTValidator {
       modules: [] as string[],
       resolvers: [] as string[],
       services: [] as string[],
+      enums: [] as string[],
+      utils: [] as string[],
+      tests: [] as string[],
       other: [] as string[],
     }
 
@@ -211,6 +260,12 @@ export class GraphQLASTValidator {
         moduleFiles.resolvers.push(file)
       } else if (fileName.endsWith('.service.ts')) {
         moduleFiles.services.push(file)
+      } else if (fileName.endsWith('.enum.ts')) {
+        moduleFiles.enums.push(file)
+      } else if (fileName.endsWith('.util.ts')) {
+        moduleFiles.utils.push(file)
+      } else if (fileName.endsWith('.test.ts')) {
+        moduleFiles.tests.push(file)
       } else {
         moduleFiles.other.push(file)
       }
@@ -259,6 +314,110 @@ export class GraphQLASTValidator {
 
     if (this.rules.checkUnderscorePropertyUsage) {
       await this.validateUnderscorePropertyUsage(moduleName, files)
+    }
+
+    // Individual file naming validations
+    if (this.rules.checkModelFileNaming) {
+      this.validateFileNaming(moduleName, 'model', moduleFiles.models)
+    }
+    if (this.rules.checkServiceFileNaming) {
+      this.validateFileNaming(moduleName, 'service', moduleFiles.services)
+    }
+    if (this.rules.checkResolverFileNaming) {
+      this.validateFileNaming(moduleName, 'resolver', moduleFiles.resolvers)
+    }
+    if (this.rules.checkInputFileNaming) {
+      this.validateFileNaming(moduleName, 'input', moduleFiles.inputs)
+    }
+    if (this.rules.checkResponseFileNaming) {
+      this.validateFileNaming(moduleName, 'response', moduleFiles.responses)
+    }
+    if (this.rules.checkModuleFileNaming) {
+      this.validateFileNaming(moduleName, 'module', moduleFiles.modules)
+    }
+    if (this.rules.checkEnumFileNaming) {
+      this.validateFileNaming(moduleName, 'enum', moduleFiles.enums)
+    }
+    if (this.rules.checkUtilFileNaming) {
+      this.validateFileNaming(moduleName, 'util', moduleFiles.utils)
+    }
+    if (this.rules.checkTestFileNaming) {
+      this.validateFileNaming(moduleName, 'test', moduleFiles.tests)
+    }
+    if (this.rules.checkRepositoryFileNaming) {
+      this.validateFileNaming(moduleName, 'repository', moduleFiles.repositories)
+    }
+  }
+
+  // Folders that are not NestJS modules and should be excluded from naming validation
+  private static readonly UTILITY_FOLDERS = new Set([
+    'lib',
+    'util',
+    'utils',
+    'helpers',
+    'helper',
+    'common',
+    'shared',
+    'core',
+    'config',
+    'constants',
+    'types',
+    'interfaces',
+    'decorators',
+    'guards',
+    'pipes',
+    'filters',
+    'interceptors',
+    'middleware',
+    'middlewares',
+  ])
+
+  /**
+   * Check if a module name is a utility folder (not a NestJS module)
+   */
+  private isUtilityFolder(moduleName: string): boolean {
+    return GraphQLASTValidator.UTILITY_FOLDERS.has(moduleName)
+  }
+
+  /**
+   * Unified file naming validation for all file types.
+   * Valid patterns: {moduleName}.{type}.ts or {moduleName}-*.{type}.ts
+   * Examples for 'article' module:
+   *   - article.model.ts ✓
+   *   - article-rating.model.ts ✓
+   *   - user-article-rating.model.ts ✗ (should be article-user-rating.model.ts)
+   *
+   * Note: Utility folders (lib, util, helpers, etc.) are excluded from naming validation
+   */
+  private validateFileNaming(
+    moduleName: string,
+    fileType: ValidatedFileType,
+    files: string[],
+  ): void {
+    // Skip naming validation for utility folders (not NestJS modules)
+    if (this.isUtilityFolder(moduleName)) return
+
+    const config = FILE_TYPE_CONFIGS[fileType]
+
+    for (const file of files) {
+      const fileName = path.basename(file, '.ts')
+
+      // Allow patterns like: moduleName.type or moduleName-*.type
+      const isValidNaming =
+        fileName === `${moduleName}${config.suffix}` || fileName.startsWith(`${moduleName}-`)
+
+      // Skip 'app' module for module files (special case)
+      if (fileType === 'module' && moduleName === 'app') continue
+
+      if (!isValidNaming) {
+        const message = `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} file should be named "${moduleName}${config.suffix}.ts" or "${moduleName}-*${config.suffix}.ts", found "${fileName}.ts"`
+
+        if (config.severity === 'error') {
+          this.addError(file, config.errorCode, message)
+        } else {
+          this.addWarning(file, config.errorCode, message)
+        }
+      }
     }
   }
 
@@ -319,6 +478,8 @@ export class GraphQLASTValidator {
 
   private async validateModelFiles(moduleName: string, modelFiles: string[], allFiles: string[]) {
     if (!this.program) return
+
+    // Note: Model file naming is now handled by unified validateFileNaming method
 
     // Check all files for entities and models in wrong places
     for (const file of allFiles) {
@@ -752,22 +913,7 @@ export class GraphQLASTValidator {
       )
     }
 
-    // Check module file naming and path
-    for (const file of moduleFiles) {
-      const fileName = path.basename(file, '.ts')
-
-      // Allow patterns like: moduleName.module.ts or moduleName-*.module.ts
-      const isValidNaming =
-        fileName === `${moduleName}.module` || fileName.startsWith(`${moduleName}-`)
-
-      if (!isValidNaming && moduleName !== 'app') {
-        this.addWarning(
-          file,
-          'module-naming',
-          `Module file should be named "${moduleName}.module.ts" or "${moduleName}-*.module.ts", found "${fileName}.ts"`,
-        )
-      }
-    }
+    // Note: Module file naming is now handled by unified validateFileNaming method
   }
 
   private async validateResolverEndpoints(
