@@ -448,7 +448,11 @@ export class GraphQLASTValidator {
       if (fileType === 'module' && moduleName === 'app') continue
 
       if (!isValidNaming) {
-        const message = `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} file should be named "${moduleName}${config.suffix}.ts" or "${moduleName}-*${config.suffix}.ts", found "${fileName}.ts"`
+        const message = `${
+          fileType.charAt(0).toUpperCase() + fileType.slice(1)
+        } file should be named "${moduleName}${config.suffix}.ts" or "${moduleName}-*${
+          config.suffix
+        }.ts", found "${fileName}.ts"`
 
         if (config.severity === 'error') {
           this.addError(file, config.errorCode, message)
@@ -503,7 +507,9 @@ export class GraphQLASTValidator {
         this.addError(
           file,
           errorCode,
-          `Class should be named "${expectedClassName}" based on file name, found: ${foundClasses.join(', ')}`,
+          `Class should be named "${expectedClassName}" based on file name, found: ${foundClasses.join(
+            ', ',
+          )}`,
           line,
         )
       }
