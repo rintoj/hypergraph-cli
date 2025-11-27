@@ -46,6 +46,28 @@ export interface ValidationRules {
   checkUtilFileNaming: boolean
   checkTestFileNaming: boolean
   checkRepositoryFileNaming: boolean
+  // Class name validation
+  checkServiceClassName: boolean
+  checkResolverClassName: boolean
+  checkRepositoryClassName: boolean
+}
+
+/**
+ * Convert a file name to PascalCase class name
+ * Examples:
+ *   - user.service.ts → User
+ *   - user-profile.service.ts → UserProfile
+ *   - user-article-rating.resolver.ts → UserArticleRating
+ */
+function fileNameToClassName(fileName: string, suffix: string): string {
+  // Remove the suffix (e.g., .service.ts, .resolver.ts)
+  const baseName = fileName.replace(new RegExp(`\\.${suffix}\\.ts$`), '')
+
+  // Convert kebab-case to PascalCase
+  return baseName
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
 }
 
 // File types that should follow naming conventions
@@ -347,6 +369,22 @@ export class GraphQLASTValidator {
     if (this.rules.checkRepositoryFileNaming) {
       this.validateFileNaming(moduleName, 'repository', moduleFiles.repositories)
     }
+
+    // Class name validations
+    if (this.rules.checkServiceClassName) {
+      this.validateClassName(moduleFiles.services, 'service', 'Service', 'service-class-name')
+    }
+    if (this.rules.checkResolverClassName) {
+      this.validateClassName(moduleFiles.resolvers, 'resolver', 'Resolver', 'resolver-class-name')
+    }
+    if (this.rules.checkRepositoryClassName) {
+      this.validateClassName(
+        moduleFiles.repositories,
+        'repository',
+        'Repository',
+        'repository-class-name',
+      )
+    }
   }
 
   // Folders that are not NestJS modules and should be excluded from naming validation
@@ -410,7 +448,11 @@ export class GraphQLASTValidator {
       if (fileType === 'module' && moduleName === 'app') continue
 
       if (!isValidNaming) {
-        const message = `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} file should be named "${moduleName}${config.suffix}.ts" or "${moduleName}-*${config.suffix}.ts", found "${fileName}.ts"`
+        const message = `${
+          fileType.charAt(0).toUpperCase() + fileType.slice(1)
+        } file should be named "${moduleName}${config.suffix}.ts" or "${moduleName}-*${
+          config.suffix
+        }.ts", found "${fileName}.ts"`
 
         if (config.severity === 'error') {
           this.addError(file, config.errorCode, message)
@@ -419,6 +461,74 @@ export class GraphQLASTValidator {
         }
       }
     }
+  }
+
+  /**
+   * Validate that class names match the file name convention.
+   * Example: user.service.ts should contain class UserService
+   *
+   * @param files - Array of file paths to validate
+   * @param fileTypeSuffix - The file type suffix (e.g., 'service', 'resolver', 'repository')
+   * @param classSuffix - The expected class name suffix (e.g., 'Service', 'Resolver', 'Repository')
+   * @param errorCode - The error code to use for validation errors
+   */
+  private validateClassName(
+    files: string[],
+    fileTypeSuffix: string,
+    classSuffix: string,
+    errorCode: string,
+  ): void {
+    if (!this.program) return
+
+    for (const file of files) {
+      const sourceFile = this.program.getSourceFile(path.join(this.rootPath, file))
+      if (!sourceFile) continue
+
+      const fileName = path.basename(file)
+      const expectedBaseName = fileNameToClassName(fileName, fileTypeSuffix)
+      const expectedClassName = `${expectedBaseName}${classSuffix}`
+
+      let foundMatchingClass = false
+      let foundClasses: string[] = []
+
+      this.visitNode(sourceFile, node => {
+        if (ts.isClassDeclaration(node) && node.name) {
+          const className = node.name.text
+          foundClasses.push(className)
+
+          if (className === expectedClassName) {
+            foundMatchingClass = true
+          }
+        }
+      })
+
+      if (!foundMatchingClass && foundClasses.length > 0) {
+        const line = this.getFirstClassLine(sourceFile)
+        this.addError(
+          file,
+          errorCode,
+          `Class should be named "${expectedClassName}" based on file name, found: ${foundClasses.join(
+            ', ',
+          )}`,
+          line,
+        )
+      }
+    }
+  }
+
+  /**
+   * Get the line number of the first class declaration in a source file
+   */
+  private getFirstClassLine(sourceFile: ts.SourceFile): number | undefined {
+    let line: number | undefined
+
+    this.visitNode(sourceFile, node => {
+      if (ts.isClassDeclaration(node) && !line) {
+        line = this.getLineNumber(sourceFile, node.getStart(sourceFile))
+      }
+    })
+
+    return line
   }
 
   private async validateInputFiles(moduleName: string, inputFiles: string[]) {
