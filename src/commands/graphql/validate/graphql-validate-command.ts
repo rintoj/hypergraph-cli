@@ -38,6 +38,10 @@ const DEFAULT_RULES: ValidationRules = {
   checkUtilFileNaming: true,
   checkTestFileNaming: true,
   checkRepositoryFileNaming: true,
+  // Class name validation
+  checkServiceClassName: true,
+  checkResolverClassName: true,
+  checkRepositoryClassName: true,
 }
 
 interface HgConfig {
